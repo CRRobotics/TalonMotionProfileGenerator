@@ -1,0 +1,33 @@
+<html>
+<head>
+<title>Path Generator</title>
+</head>
+<body>
+
+<script>
+var p1 = {x: 0, y: 2};
+var vel1 = {x: 1, y: 0};
+var acc1 = {x: 0, y: -1};
+
+var p2 = {x: 2, y: 1};
+var vel2 = {x: 1, y: 0};
+var acc2 = {x: 0, y: 1};
+var robotMaxSpeed = 2;//5 inches per second
+var robotAcc = 0.5;//1 inch per second per second
+
+//	Works for 5th degree polynomials
+//	Takes in 2 pts, 2 velocity vectors, 2 acceleration vectors
+//
+function getPolynomialConstants(pt1, pt2, v1, v2, a1, a2)
+{
+	var matrix = [	[Math.pow(pt1['x'], 5), Math.pow(pt1['x'], 4), Math.pow(pt1['x'], 3), Math.pow(pt1['x'], 2), Math.pow(pt1['x'], 1), 1],
+					[Math.pow(pt2['x'], 5), Math.pow(pt2['x'], 4), Math.pow(pt2['x'], 3), Math.pow(pt2['x'], 2), Math.pow(pt2['x'], 1), 1],
+					[5 * Math.pow(pt1['x'], 4), 4 * Math.pow(pt1['x'], 3), 3 * Math.pow(pt1['x'], 2), 2 * Math.pow(pt1['x'], 1), 1, 0],
+					[5 * Math.pow(pt2['x'], 4), 4 * Math.pow(pt2['x'], 3), 3 * Math.pow(pt2['x'], 2), 2 * Math.pow(pt2['x'], 1), 1, 0],
+					[20 * Math.pow(pt1['x'], 3), 12 * Math.pow(pt1['x'], 2), 6 * Math.pow(pt1['x'], 1), 2, 0, 0],
+					[20 * Math.pow(pt2['x'], 3), 12 * Math.pow(pt2['x'], 2), 6 * Math.pow(pt2['x'], 1), 2, 0, 0]];
+}
+
+</script>
+</body>
+</html>
