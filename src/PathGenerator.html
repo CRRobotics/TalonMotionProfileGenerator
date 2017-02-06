@@ -117,13 +117,77 @@ function drawPolynomial(constants, upperLimit, ctx)
 	ctx.beginPath();
 	var scale = 700 / upperLimit;
 	var increment = upperLimit / 80;
-	ctx.moveTo(0, f(0, constants));
+	ctx.moveTo(0, 800 - f(0, constants));
 	for (k = 1; k < 80; k++)
 	{
-		ctx.lineTo(k * increment * scale, f(k * increment, constants) * scale);
+		ctx.lineTo(k * increment * scale, 800 - f(k * increment, constants) * scale);
 		//console.log("(" + k * increment + ", " + f(k * increment, constants) + ")\n");
 	}
 	ctx.stroke();
+}
+
+function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed, v1, v2, timeInterval)
+{
+	var totalTime = 0;
+	var totalLength = 0;
+	var STEP_SIZE = 0.00001;
+	for (j = lowerLimit; j < upperLimit; j+= STEP_SIZE)
+	{
+		totalLength += math.sqrt(1 + Math.pow(derivative(j, centerCons), 2)) * STEP_SIZE;
+	} 
+
+	var timeAccelerating = (rSpeed - v1) / rAcc;
+	var lengthAccelerating = (v1 + rSpeed) / 2 * timeAccelerating;
+	
+	var timeDeccelerating = (rSpeed - v2) / rAcc;
+	var lengthDeccelerating = (rSpeed + v2) / 2 * timeDeccelerating;
+	
+	var lengthConsSpeed = totalLength - lengthAccelerating - lengthDeccelerating;
+	var timeConsSpeed = lengthConsSpeed / rSpeed;
+	console.log(timeAccelerating);
+	console.log(timeConsSpeed);
+	console.log(timeDeccelerating);
+	totalTime = timeAccelerating + timeDeccelerating + timeConsSpeed;
+
+	var upperPts = [];//format: [x, y, vel]
+	var lowerPts = [];
+	var TIME_STEP = 0.1;
+	var xTraveled = lowerLimit;
+	context.fillStyle = "#ff0000";
+	for(time = 0; time < timeAccelerating; time += TIME_STEP)
+	{
+		var distToTravel = (rAcc * time + rAcc * (time + TIME_STEP)) / 2 * TIME_STEP;
+		while (distToTravel >= 0)
+		{
+			distToTravel -= math.sqrt(1 + Math.pow(derivative(xTraveled, centerCons), 2)) * STEP_SIZE;
+			xTraveled += STEP_SIZE;
+		}
+		context.fillRect(xTraveled * 700 / 6 - 5, 800 - f(xTraveled, centerCons) * 700 / 6 - 5, 5, 5);
+	}
+	
+	context.fillStyle = "#00ff00";
+	for (time = timeAccelerating; time < timeAccelerating + timeConsSpeed; time += TIME_STEP)
+	{
+		var distToTravel = rSpeed * TIME_STEP;
+		while (distToTravel >= 0)
+		{
+			distToTravel -= math.sqrt(1 + Math.pow(derivative(xTraveled, centerCons), 2)) * STEP_SIZE;
+			xTraveled += STEP_SIZE;
+		}
+		context.fillRect(xTraveled * 700 / 6 - 5, 800 - f(xTraveled, centerCons) * 700 / 6 - 5, 5, 5);
+	}
+	
+	context.fillStyle = "#0000ff";
+	for (time = timeAccelerating + timeConsSpeed; time < totalTime; time += TIME_STEP)
+	{
+		var distToTravel = ((v2 + (totalTime - time) * rAcc) + (v2 + (totalTime - time + TIME_STEP) * rAcc)) / 2 * TIME_STEP;
+		while (distToTravel >= 0)
+		{
+			distToTravel -= math.sqrt(1 + Math.pow(derivative(xTraveled, centerCons), 2)) * STEP_SIZE;
+			xTraveled += STEP_SIZE;
+		}
+		context.fillRect(xTraveled * 700 / 6 - 5, 800 - f(xTraveled, centerCons) * 700 / 6 - 5, 5, 5);
+	}
 }
 
 var p1 = {x: 3, y: 2};
@@ -133,12 +197,20 @@ var acc1 = {x: 0, y: -0.5};
 var p2 = {x: 5, y: 6};
 var vel2 = {x: 0, y: 0};
 var acc2 = {x: 0, y: 0.5};
-var robotMaxSpeed = 2;//5 inches per second
-var robotAcc = 0.5;//1 inch per second per second
+var robotMaxSpeed = 2;//2 inches per second
+var robotAcc = 1.0;//0.5 inch per second per second
 
 var centerPathConstants = getPolynomialConstants(p1, p2, vel1, vel2, acc1, acc2);
-drawPolynomial(centerPathConstants, p2['y'] + 1, context);
 
+drawPolynomial(centerPathConstants, p2['x'] + 1, context);
+generateComponentParts(centerPathConstants, p1['x'], p2['x'], robotAcc, robotMaxSpeed, Math.sqrt(vel1['x'] * vel1['x'] + vel1['y'] * vel1['y']), Math.sqrt(vel2['x'] * vel2['x'] + vel2['y'] * vel2['y']), 20);
+
+//for (kk = 3; kk < 5; kk += 0.2)
+//{	
+//	context.beginPath();
+//	context.arc(kk * 700 / 6, 800 - f(kk, centerPathConstants) * 700 / 6, 0.5 * 700 / 6, 0, 2 * 3.141592)
+//	context.stroke();
+//}
 </script>
 </body>
 </html>
