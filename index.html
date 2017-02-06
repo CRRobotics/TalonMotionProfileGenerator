@@ -4,7 +4,8 @@
 <script src="math.js"></script>
 </head>
 <body>
-<canvas id="myCanvas"></canvas>
+<canvas id="bgCanvas" style="position:absolute;zIndex:0;"></canvas>
+<canvas id="myCanvas" style="position:absolute;zIndex:1;"></canvas>
 <script>
 var c = document.getElementById("myCanvas");
 c.onclick = canvasClicked;
@@ -333,12 +334,16 @@ function refresh()
 }
 
 function setupCanvas() {
-    var ctx = context;
+    var c2 = document.getElementById("bgCanvas");
+    var ctx = c2.getContext("2d");
     height = window.innerHeight - 20;
     width = height * 1.673;
+    context.canvas.width = width;
+    context.canvas.height = height;
     ctx.canvas.width = width;
-    ctx.canvas.height = height;
-    //console.log("setup");
+    ctx.canvas.width = height;
+    ctx.drawImage(base_image, 0, 0, width, height);
+	//console.log("setup");
 }
 
 function drawWayPts() {
@@ -365,7 +370,6 @@ function draw() {
         //Browser has been resized
         setupCanvas();
     }
-    context.drawImage(base_image, 0, 0, width, height);
     drawWayPts();
     //...drawing code...
     //Runs often and fast
