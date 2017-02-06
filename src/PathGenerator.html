@@ -12,7 +12,8 @@ var context = c.getContext("2d");
 var img = document.getElementById("field");
 var height = 0;
 var width = 0;
-
+base_image = new Image();
+base_image.src = 'Field_small.png';
 
 //	Works for 5th degree polynomials
 //	Takes in 2 pts, 2 velocity vectors, 2 acceleration vectors
@@ -300,30 +301,15 @@ function canvasClicked(e)
 	var y = (e.clientY) - 7;
 	
 	var pt = { x: toInches(x), y: toInches(y) };
-	console.log(pt);
 	console.log(x + ", " + y);
 	if (mode == 0)
 	{
 		mode = 1;
-		context.beginPath();
-		context.arc(x, y, 5, 0, 2 * Math.PI);
-		context.fillStyle = 'green';
-		context.fill();
-	    //context.lineWidth = 0;
-		context.closePath();
-		context.stroke();
 		pts.push(pt);
 	}
 	else if (mode == 1)
 	{
 		mode = 2;
-		context.beginPath();
-		context.arc(x, y, 5, 0, 2 * Math.PI);
-		context.fillStyle = 'red';
-		context.fill();
-		context.lineWidth = 0;
-		context.closePath();
-		context.stroke();
 		pts.push(pt);
 	}
 	else if (mode == 2)
@@ -352,29 +338,44 @@ function setupCanvas() {
     width = height * 1.673;
     ctx.canvas.width = width;
     ctx.canvas.height = height;
-    base_image = new Image();
-    base_image.src = 'Field_small.png';
-    base_image.onload = function () {
-        ctx.drawImage(base_image, 0, 0, width, height);
-    }
     //console.log("setup");
+}
+
+function drawWayPts() {
+    for (var j = 0; j < pts.length; j++) {
+        x = toScreenCoordinates(pts[j].x);
+        y = toScreenCoordinates(pts[j].y);
+        context.beginPath();
+        context.arc(x, y, 5, 0, 2 * Math.PI);
+        if (j == 0)
+            context.fillStyle = 'green';
+        else
+            context.fillStyle = 'red';
+        context.fill();
+        context.lineWidth = 0;
+        context.closePath();
+        context.stroke();
+    }
 }
 
 function draw() {
     var ctx = context;
+    ctx.clearRect(0, 0, c.width, c.height);
     if ((window.innerHeight - 20) != height) {
         //Browser has been resized
         setupCanvas();
     }
+    context.drawImage(base_image, 0, 0, width, height);
+    drawWayPts();
     //...drawing code...
     //Runs often and fast
-    //Don't resize or clear the canvas without running seupCanvas() again
 }
 
 function loop() {
-    window.setTimeout(loop, 20);
+    window.setTimeout(loop, 15);
     draw();
 }
+
 setupCanvas();
 loop();
 </script>
