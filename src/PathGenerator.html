@@ -4,11 +4,15 @@
 <script src="math.js"></script>
 </head>
 <body>
-<canvas id="myCanvas" width="800px" height="800px" style="width:400px;height=400px"></canvas>
-
+<canvas id="myCanvas" width="3346px" height="2000px" style="width:836px;height=500px"></canvas>
+<img id="field" src="Field_small.png" style="visibility:hidden;"/>
 <script>
 var c = document.getElementById("myCanvas");
+c.onclick = canvasClicked;
 var context = c.getContext("2d");
+
+var img=document.getElementById("field");
+context.drawImage(img,0,0);
 
 //	Works for 5th degree polynomials
 //	Takes in 2 pts, 2 velocity vectors, 2 acceleration vectors
@@ -122,7 +126,7 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 	var totalTime = 0;
 	var totalLength = 0;
 	var STEP_SIZE = 0.00001;
-	var TIME_STEP = 0.5;
+	var TIME_STEP = 0.25;
 	for (j = lowerLimit; j < upperLimit; j+= STEP_SIZE)
 	{
 		totalLength += math.sqrt(1 + Math.pow(derivative(j, centerCons), 2)) * STEP_SIZE;
@@ -156,7 +160,7 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		}
 		tick++;
 		context.fillStyle = "#000000"
-		context.fillRect(xTraveled * 700 / (p2['x'] + 1) - 2.5, 800 - f(xTraveled, centerCons) * 700 / (p2['x'] + 1) - 2.5, 5, 5);
+		context.fillRect(xTraveled - 2.5, 800 - f(xTraveled, centerCons) - 2.5, 5, 5);
 		context.fillStyle = "#ff0000";
 		var pts = getUpperAndLowerPathPts(xTraveled, f(xTraveled, centerCons), derivative(xTraveled, centerCons), space);
 		var upperPt = pts[0];
@@ -174,8 +178,8 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		}
 		upperPts.push(upperPt);
 		lowerPts.push(lowerPt);
-		context.fillRect(upperPt[0] * 700 / (p2['x'] + 1) - 2.5, 800 - upperPt[1] * 700 / (p2['x'] + 1) - 2.5, 5, 5);
-		context.fillRect(lowerPt[0] * 700 / (p2['x'] + 1) - 2.5, 800 - lowerPt[1] * 700 / (p2['x'] + 1) - 2.5, 5, 5);
+		context.fillRect(upperPt[0] - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
+		context.fillRect(lowerPt[0] - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
 	}
 	
 	
@@ -189,7 +193,7 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		}
 		tick++;
 		context.fillStyle = "#000000"
-		context.fillRect(xTraveled * 700 / (p2['x'] + 1) - 2.5, 800 - f(xTraveled, centerCons) * 700 / (p2['x'] + 1) - 2.5, 5, 5);
+		context.fillRect(xTraveled - 2.5, 800 - f(xTraveled, centerCons) - 2.5, 5, 5);
 		context.fillStyle = "#00ff00";
 		
 		var pts = getUpperAndLowerPathPts(xTraveled, f(xTraveled, centerCons), derivative(xTraveled, centerCons), space);
@@ -209,8 +213,8 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		upperPts.push(upperPt);
 		lowerPts.push(lowerPt);
 
-		context.fillRect(upperPt[0] * 700 / (p2['x'] + 1) - 2.5, 800 - upperPt[1] * 700 / (p2['x'] + 1) - 2.5, 5, 5);
-		context.fillRect(lowerPt[0] * 700 / (p2['x'] + 1) - 2.5, 800 - lowerPt[1] * 700 / (p2['x'] + 1) - 2.5, 5, 5);
+		context.fillRect(upperPt[0] - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
+		context.fillRect(lowerPt[0] - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
 	}
 	
 	
@@ -226,7 +230,7 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 			xTraveled = upperLimit;
 		tick++;
 		context.fillStyle = "#000000"
-		context.fillRect(xTraveled * 700 / (p2['x'] + 1) - 2.5, 800 - f(xTraveled, centerCons) * 700 / (p2['x'] + 1) - 2.5, 5, 5);
+		context.fillRect(xTraveled - 2.5, 800 - f(xTraveled, centerCons) - 2.5, 5, 5);
 		context.fillStyle = "#0000ff";
 		
 		var pts = getUpperAndLowerPathPts(xTraveled, f(xTraveled, centerCons), derivative(xTraveled, centerCons), space);
@@ -245,8 +249,8 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		}
 		upperPts.push(upperPt);
 		lowerPts.push(lowerPt);
-		context.fillRect(upperPt[0] * 700 / (p2['x'] + 1) - 2.5, 800 - upperPt[1] * 700 / (p2['x'] + 1) - 2.5, 5, 5);
-		context.fillRect(lowerPt[0] * 700 / (p2['x'] + 1) - 2.5, 800 - lowerPt[1] * 700 / (p2['x'] + 1) - 2.5, 5, 5);
+		context.fillRect(upperPt[0]  - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
+		context.fillRect(lowerPt[0]  - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
 	}
 	console.log(tick);
 	console.log("UPPER PTS:\n");
@@ -257,28 +261,78 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		console.log(lowerPts[b][2]);
 }
 
-var p1 = {x: 3, y: 35};
+/*var p1 = {x: 3, y: 35};
 var vel1 = {x: 0, y: 0};
 var acc1 = {x: 0, y: -0.5};
 
 var p2 = {x: 35, y: 5};
-var vel2 = {x: 0.5, y: 0.5};
+var vel2 = {x: 1.4, y: 1.4};
 var acc2 = {x: 0, y: 0.5};
 var robotMaxSpeed = 3;//2 inches per second
 var robotAcc = 1.0;//0.5 inch per second per second
-var halfRobotWidth = 0.5;
+var halfRobotWidth = 1;
 
 var centerPathConstants = getPolynomialConstants(p1, p2, vel1, vel2, acc1, acc2);
 
 drawPolynomial(centerPathConstants, p2['x'], context);
 generateComponentParts(centerPathConstants, p1['x'], p2['x'], robotAcc, robotMaxSpeed, Math.sqrt(vel1['x'] * vel1['x'] + vel1['y'] * vel1['y']), Math.sqrt(vel2['x'] * vel2['x'] + vel2['y'] * vel2['y']), 20, halfRobotWidth);
+*/
 
-//for (kk = 3; kk < 5; kk += 0.2)
-//{	
-//	context.beginPath();
-//	context.arc(kk * 700 / (p2['x'] + 1), 800 - f(kk, centerPathConstants) * 700 / (p2['x'] + 1), 0.5 * 700 / (p2['x'] + 1), 0, 2 * 3.141592)
-//	context.stroke();
-//}
+var mode = 0;//0 = start Point, 1 = endPoint selection, 2 = velocity vector selection
+var pts = [];
+function toScreenCoordinates(inches)
+{
+	return inches * 836 * 4 / 59.91 / 12;
+}
+
+function toInches(coord)
+{
+	return coord * 59.91 * 12 / 836 / 4;
+}
+
+function canvasClicked(e)
+{
+	var x = (e.clientX + 15) * 4;
+	var y = (e.clientY - 10) * 4;
+	
+	var pt = {x: toInches(x),y: toInches(y)};
+	console.log(x + ", " + y);
+	if (mode == 0)
+	{
+		mode = 1;
+		context.fillStyle= "#ff0000";
+		context.fillRect(x - 15, y - 15, 30, 30)
+		pts.push(pt);
+	}
+	else if (mode == 1)
+	{
+		mode = 2;
+		context.fillStyle= "#ff0000";
+		context.fillRect(x - 15, y - 15, 30, 30)
+		pts.push(pt);
+	}
+	else if (mode == 2)
+	{
+		mode = 1;
+		var m = (toInches(y) - pts[pts.length - 1]['y']) / (toInches(x) - pts[pts.length - 1]['x']);
+		var dx = (100)/ (1 + m * m);
+		if (toInches(x) < pts[pts.length - 1]['x'])
+			dx = -dx;
+		var dy = m * dx;
+		context.beginPath();
+		context.moveTo(toScreenCoordinates(pts[pts.length - 1]['x']), toScreenCoordinates(pts[pts.length - 1]['y']));
+		context.lineTo(toScreenCoordinates(pts[pts.length - 1]['x']) + dx, toScreenCoordinates(pts[pts.length - 1]['y']) + dy);
+		context.stroke();
+	}
+}
+
+function refresh()
+{
+	canvas.clear(0,0,3346,2000);
+	context.drawImage(img,0,0);
+	
+}
+
 </script>
 </body>
 </html>
