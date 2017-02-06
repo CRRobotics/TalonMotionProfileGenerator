@@ -4,15 +4,15 @@
 <script src="math.js"></script>
 </head>
 <body>
-<canvas id="myCanvas" width="3346px" height="2000px" style="width:836px;height=500px"></canvas>
-<img id="field" src="Field_small.png" style="visibility:hidden;"/>
+<canvas id="myCanvas"></canvas>
 <script>
 var c = document.getElementById("myCanvas");
 c.onclick = canvasClicked;
 var context = c.getContext("2d");
+var img = document.getElementById("field");
+var height = 0;
+var width = 0;
 
-var img=document.getElementById("field");
-context.drawImage(img,0,0);
 
 //	Works for 5th degree polynomials
 //	Takes in 2 pts, 2 velocity vectors, 2 acceleration vectors
@@ -282,33 +282,48 @@ var mode = 0;//0 = start Point, 1 = endPoint selection, 2 = velocity vector sele
 var pts = [];
 function toScreenCoordinates(inches)
 {
-	return inches * 836 * 4 / 59.91 / 12;
+    var height = window.innerHeight - 20;
+    var width = height * 1.673;
+	return inches * width / 59.91 / 12;
 }
 
 function toInches(coord)
 {
-	return coord * 59.91 * 12 / 836 / 4;
+    var height = window.innerHeight - 20;
+    var width = height * 1.673;
+	return coord * 59.91 * 12 / width;
 }
 
 function canvasClicked(e)
 {
-	var x = (e.clientX + 15) * 4;
-	var y = (e.clientY - 10) * 4;
+	var x = (e.clientX) - 7;
+	var y = (e.clientY) - 7;
 	
-	var pt = {x: toInches(x),y: toInches(y)};
+	var pt = { x: toInches(x), y: toInches(y) };
+	console.log(pt);
 	console.log(x + ", " + y);
 	if (mode == 0)
 	{
 		mode = 1;
-		context.fillStyle= "#ff0000";
-		context.fillRect(x - 15, y - 15, 30, 30)
+		context.beginPath();
+		context.arc(x, y, 5, 0, 2 * Math.PI);
+		context.fillStyle = 'green';
+		context.fill();
+	    //context.lineWidth = 0;
+		context.closePath();
+		context.stroke();
 		pts.push(pt);
 	}
 	else if (mode == 1)
 	{
 		mode = 2;
-		context.fillStyle= "#ff0000";
-		context.fillRect(x - 15, y - 15, 30, 30)
+		context.beginPath();
+		context.arc(x, y, 5, 0, 2 * Math.PI);
+		context.fillStyle = 'red';
+		context.fill();
+		context.lineWidth = 0;
+		context.closePath();
+		context.stroke();
 		pts.push(pt);
 	}
 	else if (mode == 2)
@@ -328,11 +343,40 @@ function canvasClicked(e)
 
 function refresh()
 {
-	canvas.clear(0,0,3346,2000);
-	context.drawImage(img,0,0);
-	
+	//context.drawImage(img, 0, 0);
 }
 
+function setupCanvas() {
+    var ctx = context;
+    height = window.innerHeight - 20;
+    width = height * 1.673;
+    ctx.canvas.width = width;
+    ctx.canvas.height = height;
+    base_image = new Image();
+    base_image.src = 'Field_small.png';
+    base_image.onload = function () {
+        ctx.drawImage(base_image, 0, 0, width, height);
+    }
+    //console.log("setup");
+}
+
+function draw() {
+    var ctx = context;
+    if ((window.innerHeight - 20) != height) {
+        //Browser has been resized
+        setupCanvas();
+    }
+    //...drawing code...
+    //Runs often and fast
+    //Don't resize or clear the canvas without running seupCanvas() again
+}
+
+function loop() {
+    window.setTimeout(loop, 20);
+    draw();
+}
+setupCanvas();
+loop();
 </script>
 </body>
 </html>
