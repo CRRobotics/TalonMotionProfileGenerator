@@ -112,6 +112,33 @@ function splitPath(cPath, spacing, lowerLimit, upperLimit, iVel, fVel)
 	return [getPolynomialConstantsFromPtsAndVel(upperPathPoints)._data, getPolynomialConstantsFromPtsAndVel(lowerPathPoints)._data];
 }
 
+function getUpperAndLowerPathPts(xOrig, yOrig, m, spacing)
+{
+	var pts = [];
+	if (Math.abs(m) < 0.0001)
+	{
+		pts.push([xOrig, yOrig + spacing]);
+		pts.push([xOrig, yOrig - spacing]);
+	}
+	else
+	{
+		var perpendicular = -1 / m;
+		var dx = Math.sqrt((spacing * spacing) / (1 + perpendicular * perpendicular));
+		var dy = dx * perpendicular;
+		if (m > 0)
+		{
+			pts.push([xOrig - dx, yOrig - dy]);
+			pts.push([xOrig + dx, yOrig + dy]);
+		}
+		else
+		{
+			pts.push([xOrig + dx, yOrig + dy]);
+			pts.push([xOrig - dx, yOrig - dy]);
+		}
+	}
+	return pts;
+}
+
 function drawPolynomial(constants, upperLimit, ctx)
 {
 	ctx.beginPath();
@@ -126,11 +153,11 @@ function drawPolynomial(constants, upperLimit, ctx)
 	ctx.stroke();
 }
 
-function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed, v1, v2, timeInterval)
+function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed, v1, v2, timeInterval, space)
 {
 	var totalTime = 0;
 	var totalLength = 0;
-	var STEP_SIZE = 0.00001;
+	var STEP_SIZE = 0.000005;
 	for (j = lowerLimit; j < upperLimit; j+= STEP_SIZE)
 	{
 		totalLength += math.sqrt(1 + Math.pow(derivative(j, centerCons), 2)) * STEP_SIZE;
@@ -154,6 +181,7 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 	var TIME_STEP = 0.1;
 	var xTraveled = lowerLimit;
 	context.fillStyle = "#ff0000";
+	var tick = 0;
 	for(time = 0; time < timeAccelerating; time += TIME_STEP)
 	{
 		var distToTravel = (rAcc * time + rAcc * (time + TIME_STEP)) / 2 * TIME_STEP;
@@ -162,10 +190,31 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 			distToTravel -= math.sqrt(1 + Math.pow(derivative(xTraveled, centerCons), 2)) * STEP_SIZE;
 			xTraveled += STEP_SIZE;
 		}
-		context.fillRect(xTraveled * 700 / 6 - 5, 800 - f(xTraveled, centerCons) * 700 / 6 - 5, 5, 5);
+		tick++;
+		context.fillStyle = "#000000"
+		context.fillRect(xTraveled * 700 / (p2['x'] + 1) - 5, 800 - f(xTraveled, centerCons) * 700 / (p2['x'] + 1) - 5, 5, 5);
+		context.fillStyle = "#ff0000";
+		var pts = getUpperAndLowerPathPts(xTraveled, f(xTraveled, centerCons), derivative(xTraveled, centerCons), space);
+		var upperPt = pts[0];
+		var lowerPt = pts[1];
+	
+		if (upperPts.length != 0)
+		{
+			upperPt.push(Math.sqrt(Math.pow(upperPt[0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(upperPt[1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP);
+			lowerPt.push(Math.sqrt(Math.pow(lowerPt[0] - lowerPts[lowerPts.length - 1][0], 2) + Math.pow(lowerPt[1] - lowerPts[lowerPts.length - 1][1], 2)) / TIME_STEP);
+		}
+		else
+		{
+			upperPt.push(0);
+			lowerPt.push(0);
+		}
+		upperPts.push(upperPt);
+		lowerPts.push(lowerPt);
+		context.fillRect(upperPt[0] * 700 / (p2['x'] + 1) - 5, 800 - upperPt[1] * 700 / (p2['x'] + 1) - 5, 5, 5);
+		context.fillRect(lowerPt[0] * 700 / (p2['x'] + 1) - 5, 800 - lowerPt[1] * 700 / (p2['x'] + 1) - 5, 5, 5);
 	}
 	
-	context.fillStyle = "#00ff00";
+	
 	for (time = timeAccelerating; time < timeAccelerating + timeConsSpeed; time += TIME_STEP)
 	{
 		var distToTravel = rSpeed * TIME_STEP;
@@ -174,10 +223,33 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 			distToTravel -= math.sqrt(1 + Math.pow(derivative(xTraveled, centerCons), 2)) * STEP_SIZE;
 			xTraveled += STEP_SIZE;
 		}
-		context.fillRect(xTraveled * 700 / 6 - 5, 800 - f(xTraveled, centerCons) * 700 / 6 - 5, 5, 5);
+		tick++;
+		context.fillStyle = "#000000"
+		context.fillRect(xTraveled * 700 / (p2['x'] + 1) - 5, 800 - f(xTraveled, centerCons) * 700 / (p2['x'] + 1) - 5, 5, 5);
+		context.fillStyle = "#00ff00";
+		
+		var pts = getUpperAndLowerPathPts(xTraveled, f(xTraveled, centerCons), derivative(xTraveled, centerCons), space);
+		var upperPt = pts[0];
+		var lowerPt = pts[1];
+	
+		if (upperPts.length != 0)
+		{
+			upperPt.push(Math.sqrt(Math.pow(upperPt[0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(upperPt[1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP);
+			lowerPt.push(Math.sqrt(Math.pow(lowerPt[0] - lowerPts[lowerPts.length - 1][0], 2) + Math.pow(lowerPt[1] - lowerPts[lowerPts.length - 1][1], 2)) / TIME_STEP);
+		}
+		else
+		{
+			upperPt.push(0);
+			lowerPt.push(0);
+		}
+		upperPts.push(upperPt);
+		lowerPts.push(lowerPt);
+
+		context.fillRect(upperPt[0] * 700 / (p2['x'] + 1) - 5, 800 - upperPt[1] * 700 / (p2['x'] + 1) - 5, 5, 5);
+		context.fillRect(lowerPt[0] * 700 / (p2['x'] + 1) - 5, 800 - lowerPt[1] * 700 / (p2['x'] + 1) - 5, 5, 5);
 	}
 	
-	context.fillStyle = "#0000ff";
+	
 	for (time = timeAccelerating + timeConsSpeed; time < totalTime; time += TIME_STEP)
 	{
 		var distToTravel = ((v2 + (totalTime - time) * rAcc) + (v2 + (totalTime - time + TIME_STEP) * rAcc)) / 2 * TIME_STEP;
@@ -186,29 +258,55 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 			distToTravel -= math.sqrt(1 + Math.pow(derivative(xTraveled, centerCons), 2)) * STEP_SIZE;
 			xTraveled += STEP_SIZE;
 		}
-		context.fillRect(xTraveled * 700 / 6 - 5, 800 - f(xTraveled, centerCons) * 700 / 6 - 5, 5, 5);
+		tick++;
+		context.fillStyle = "#000000"
+		context.fillRect(xTraveled * 700 / (p2['x'] + 1) - 5, 800 - f(xTraveled, centerCons) * 700 / (p2['x'] + 1) - 5, 5, 5);
+		context.fillStyle = "#0000ff";
+		
+		var pts = getUpperAndLowerPathPts(xTraveled, f(xTraveled, centerCons), derivative(xTraveled, centerCons), space);
+		var upperPt = pts[0];
+		var lowerPt = pts[1];
+	
+		if (upperPts.length != 0)
+		{
+			upperPt.push(Math.sqrt(Math.pow(upperPt[0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(upperPt[1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP);
+			lowerPt.push(Math.sqrt(Math.pow(lowerPt[0] - lowerPts[lowerPts.length - 1][0], 2) + Math.pow(lowerPt[1] - lowerPts[lowerPts.length - 1][1], 2)) / TIME_STEP);
+		}
+		else
+		{
+			upperPt.push(0);
+			lowerPt.push(0);
+		}
+		upperPts.push(upperPt);
+		lowerPts.push(lowerPt);
+		context.fillRect(upperPt[0] * 700 / (p2['x'] + 1) - 5, 800 - upperPt[1] * 700 / (p2['x'] + 1) - 5, 5, 5);
+		context.fillRect(lowerPt[0] * 700 / (p2['x'] + 1) - 5, 800 - lowerPt[1] * 700 / (p2['x'] + 1) - 5, 5, 5);
 	}
+	console.log(tick);
+	console.log("UPPER PTS:\n" + upperPts);
+	console.log("LOWER PTS:\n" + lowerPts);
 }
 
 var p1 = {x: 3, y: 2};
 var vel1 = {x: 0, y: 0};
 var acc1 = {x: 0, y: -0.5};
 
-var p2 = {x: 5, y: 6};
+var p2 = {x: 20, y: 20};
 var vel2 = {x: 0, y: 0};
 var acc2 = {x: 0, y: 0.5};
 var robotMaxSpeed = 2;//2 inches per second
 var robotAcc = 1.0;//0.5 inch per second per second
+var halfRobotWidth = 0.5;
 
 var centerPathConstants = getPolynomialConstants(p1, p2, vel1, vel2, acc1, acc2);
 
-drawPolynomial(centerPathConstants, p2['x'] + 1, context);
-generateComponentParts(centerPathConstants, p1['x'], p2['x'], robotAcc, robotMaxSpeed, Math.sqrt(vel1['x'] * vel1['x'] + vel1['y'] * vel1['y']), Math.sqrt(vel2['x'] * vel2['x'] + vel2['y'] * vel2['y']), 20);
+//drawPolynomial(centerPathConstants, p2['x'] + 1, context);
+generateComponentParts(centerPathConstants, p1['x'], p2['x'], robotAcc, robotMaxSpeed, Math.sqrt(vel1['x'] * vel1['x'] + vel1['y'] * vel1['y']), Math.sqrt(vel2['x'] * vel2['x'] + vel2['y'] * vel2['y']), 20, halfRobotWidth);
 
 //for (kk = 3; kk < 5; kk += 0.2)
 //{	
 //	context.beginPath();
-//	context.arc(kk * 700 / 6, 800 - f(kk, centerPathConstants) * 700 / 6, 0.5 * 700 / 6, 0, 2 * 3.141592)
+//	context.arc(kk * 700 / (p2['x'] + 1), 800 - f(kk, centerPathConstants) * 700 / (p2['x'] + 1), 0.5 * 700 / (p2['x'] + 1), 0, 2 * 3.141592)
 //	context.stroke();
 //}
 </script>
