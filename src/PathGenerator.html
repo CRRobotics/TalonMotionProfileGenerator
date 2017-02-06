@@ -20,7 +20,9 @@ function getPolynomialConstants(pt1, pt2, v1, v2, a1, a2)
 					[5 * Math.pow(pt2['x'], 4), 4 * Math.pow(pt2['x'], 3), 3 * Math.pow(pt2['x'], 2), 2 * Math.pow(pt2['x'], 1), 1, 0],
 					[20 * Math.pow(pt1['x'], 3), 12 * Math.pow(pt1['x'], 2), 6 * Math.pow(pt1['x'], 1), 2, 0, 0],
 					[20 * Math.pow(pt2['x'], 3), 12 * Math.pow(pt2['x'], 2), 6 * Math.pow(pt2['x'], 1), 2, 0, 0]]);
-	var matrixB = math.matrix([pt1['y'], pt2['y'], v1['y'], v2['y'], a1['y'], a2['y']]);
+	vDir1 = (v1['x'] == 0) ? 0 : v1['y'] / v1['x'];
+	vDir2 = (v2['x'] == 0) ? 0 : v2['y'] / v2['x'];
+	var matrixB = math.matrix([pt1['y'], pt2['y'], vDir1, vDir2, a1['y'], a2['y']]);
 	var coefficients = math.multiply(math.inv(matrixA), matrixB);
 	return coefficients._data;
 }
@@ -37,8 +39,8 @@ function getPolynomialConstantsFromPtsOnly(points)
 		matrixArrA.push(tempArr);
 	}
 	
-	matrixA = math.matrix(matrixArrA);
-	matrixB = math.matrix([points[0][1], points[1][1], points[2][1], points[3][1], points[4][1], points[5][1]]);
+	var matrixA = math.matrix(matrixArrA);
+	var matrixB = math.matrix([points[0][1], points[1][1], points[2][1], points[3][1], points[4][1], points[5][1]]);
 	var coefficients = math.multiply(math.inv(matrixA), matrixB);
 	return coefficients;
 }
@@ -77,12 +79,12 @@ function acceleration(x, coefficients)
 }
 
 //spacing is half the robot width
-function splitPath(cPath, spacing, lowerLimit, upperLimit)
+function splitPath(cPath, spacing, lowerLimit, upperLimit, iVel, fVel)
 {
-	var increment = (upperLimit - lowerLimit) / 5;
+	var increment = (upperLimit - lowerLimit) / 3;
 	var lowerPathPoints = new Array();
 	var upperPathPoints = new Array();
-	for (ii = 0; ii < 6; ii++)
+	for (ii = 0; ii < 4; ii++)
 	{
 		var xOrig = lowerLimit + ii * increment;
 		var yOrig = f(lowerLimit + ii * increment, cPath);
@@ -102,9 +104,12 @@ function splitPath(cPath, spacing, lowerLimit, upperLimit)
 			lowerPathPoints[ii] = [xOrig + dx, yOrig + dy];
 			upperPathPoints[ii] = [xOrig - dx, yOrig - dy];
 		}
-		
 	}
-	return [getPolynomialConstantsFromPtsOnly(upperPathPoints)._data, getPolynomialConstantsFromPtsOnly(lowerPathPoints)._data];
+	upperPathPoints.push([lowerLimit, iVel]);
+	upperPathPoints.push([upperLimit, fVel]);
+	lowerPathPoints.push([lowerLimit, iVel]);
+	lowerPathPoints.push([upperLimit, fVel]);
+	return [getPolynomialConstantsFromPtsAndVel(upperPathPoints)._data, getPolynomialConstantsFromPtsAndVel(lowerPathPoints)._data];
 }
 
 function drawPolynomial(constants, upperLimit, ctx)
@@ -122,26 +127,18 @@ function drawPolynomial(constants, upperLimit, ctx)
 }
 
 var p1 = {x: 3, y: 2};
-var vel1 = {x: 2, y: 0};
+var vel1 = {x: 0, y: 0};
 var acc1 = {x: 0, y: -0.5};
 
 var p2 = {x: 5, y: 6};
-var vel2 = {x: 2, y: 0};
+var vel2 = {x: 0, y: 0};
 var acc2 = {x: 0, y: 0.5};
 var robotMaxSpeed = 2;//5 inches per second
 var robotAcc = 0.5;//1 inch per second per second
 
 var centerPathConstants = getPolynomialConstants(p1, p2, vel1, vel2, acc1, acc2);
-var otherPaths = splitPath(centerPathConstants, 0.5, p1['x'], p2['x']);
-var lowerPathConstants = otherPaths[1];
-var upperPathConstants = otherPaths[0];
-//alert("REACHED PT_1");
-drawPolynomial(centerPathConstants, 6, context);
-context.strokeStyle = "#ff0000";
-drawPolynomial(upperPathConstants, 6, context);
-context.strokeStyle = "#00ff00";
-drawPolynomial(lowerPathConstants, 6, context);
-context.arc(50, 50, 50, 0, 2 * 3.1415);
+drawPolynomial(centerPathConstants, p2['y'] + 1, context);
+
 </script>
 </body>
 </html>
