@@ -3,7 +3,7 @@
 <title>Path Generator</title>
 <script src="math.js"></script>
 </head>
-<body>
+<body onmousemove="mouseMove(event)">
 <canvas id="bgCanvas" style="position:absolute;z-index:0;"></canvas>
 <canvas id="myCanvas" style="position:absolute;z-index:1;"></canvas>
 <script>
@@ -60,7 +60,7 @@ function f(x, coefficients)
 	for (i = 5; i >= 0; i--)
 	{
 		sum += Math.pow(x, i) * coefficients[5 - i];
-	} 
+	}
 	return sum;
 }
 
@@ -71,7 +71,7 @@ function derivative(x, coefficients)
 	for (i = 4; i >= 0; i--)
 	{
 		sum += (i + 1) * Math.pow(x, i) * coefficients[4 - i];
-	} 
+	}
 	return sum;
 }
 
@@ -82,7 +82,7 @@ function acceleration(x, coefficients)
 	for (i = 3; i >= 0; i--)
 	{
 		sum += (i + 2) * (i + 1) * Math.pow(x, i) * coefficients[3 - i];
-	} 
+	}
 	return sum;
 }
 
@@ -134,7 +134,7 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 	for (j = lowerLimit; j < upperLimit; j+= STEP_SIZE)
 	{
 		totalLength += math.sqrt(1 + Math.pow(derivative(j, centerCons), 2)) * STEP_SIZE;
-	} 
+	}
 
 	var timeAccelerating = (rSpeed - v1) / rAcc;
 	var lengthAccelerating = (v1 + rSpeed) / 2 * timeAccelerating;
@@ -293,6 +293,7 @@ function toInchesY(coord)
 
 }
 
+var tempVelIndex = -1;
 var mode = 0;
 var pts = [];
 var vel = [];
@@ -316,19 +317,34 @@ function canvasClicked(e)
 	}
 	else if (mode == 2)
 	{
-		mode = 1;
-		dx = toInchesX(x) - pts[pts.length - 1].x
-		dy = toInchesY(y) - pts[pts.length - 1].y
-		vel.push({x:dx, y:dy});
-		//Time to make polynomials!
-		var vel1;
-		var vel2 = vel[vel.length - 1];
-		if (vel.length == 1)
-			vel1 = {x: 0, y: 0}
-		else
-			vel1 = vel[vel.length - 2];
+        console.log(vel.length);
+        mode = 1;
+        dx = toInchesX(x) - pts[pts.length - 1].x
+        dy = toInchesY(y) - pts[pts.length - 1].y
+        vel[vel.length - 1] = {x:dx, y:dy};
+        //Time to make polynomials!
+        var vel1;
+        var vel2 = vel[vel.length - 1];
+        if (vel.length == 1)
+        	vel1 = {x: 0, y: 0}
+        else
+            vel1 = vel[vel.length - 2];
+        tempVelIndex = -1;
 		
 	}
+}
+
+function mouseMove(e) {
+    if (mode == 2) {
+        dx = toInchesX(e.clientX) - pts[pts.length - 1].x
+        dy = toInchesY(e.clientY) - pts[pts.length - 1].y
+        if (tempVelIndex <= -1) {
+            vel.push({x:dx, y:dy});
+            tempVelIndex = 0;
+        }
+        else
+            vel[vel.length-1] = {x:dx, y:dy};
+    }
 }
 
 function refresh()
@@ -344,7 +360,7 @@ function setupCanvas() {
     context.canvas.width = width;
     context.canvas.height = height;
     c2.width = width;
-	c2.height = height;	
+	c2.height = height;
     ctx2.drawImage(base_image, 0, 0, width, height);
 	//console.log("setup");
 }
@@ -365,6 +381,7 @@ function drawWayPts() {
         context.closePath();
         context.stroke();
     }
+    //console.log(vel.length);
     for (var j = 0; j < vel.length; j++)
     {
     	context.lineWidth = 0.5;
@@ -381,7 +398,7 @@ function drawWayPts() {
     	else
     	{
     		m = dy / dx;
-    		console.log(m);
+    		//console.log(m);
     		deltaX = Math.sqrt(VEL_LEN * VEL_LEN / (1 + m * m))
     		deltaY = deltaX * m;
     		context.moveTo(toScreenX(x - deltaX), toScreenY(y - deltaY));
