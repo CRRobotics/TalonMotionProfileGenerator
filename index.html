@@ -4,8 +4,8 @@
 <script src="math.js"></script>
 </head>
 <body>
-<canvas id="bgCanvas" style="position:absolute;zIndex:0;"></canvas>
-<canvas id="myCanvas" style="position:absolute;zIndex:1;"></canvas>
+<canvas id="bgCanvas" style="position:absolute;z-index:0;"></canvas>
+<canvas id="myCanvas" style="position:absolute;z-index:1;"></canvas>
 <script>
 var c = document.getElementById("myCanvas");
 c.onclick = canvasClicked;
@@ -15,6 +15,8 @@ var height = 0;
 var width = 0;
 base_image = new Image();
 base_image.src = 'Field_small.png';
+
+base_image.onload = setupCanvas;
 
 //	Works for 5th degree polynomials
 //	Takes in 2 pts, 2 velocity vectors, 2 acceleration vectors
@@ -26,9 +28,9 @@ function getPolynomialConstants(pt1, pt2, v1, v2, a1, a2)
 					[5 * Math.pow(pt2['x'], 4), 4 * Math.pow(pt2['x'], 3), 3 * Math.pow(pt2['x'], 2), 2 * Math.pow(pt2['x'], 1), 1, 0],
 					[20 * Math.pow(pt1['x'], 3), 12 * Math.pow(pt1['x'], 2), 6 * Math.pow(pt1['x'], 1), 2, 0, 0],
 					[20 * Math.pow(pt2['x'], 3), 12 * Math.pow(pt2['x'], 2), 6 * Math.pow(pt2['x'], 1), 2, 0, 0]]);
-	vDir1 = (v1['x'] == 0) ? 0 : v1['y'] / v1['x'];
-	vDir2 = (v2['x'] == 0) ? 0 : v2['y'] / v2['x'];
-	var matrixB = math.matrix([pt1['y'], pt2['y'], vDir1, vDir2, a1['y'], a2['y']]);
+	//vDir1 = (v1['x'] == 0) ? 0 : v1['y'] / v1['x'];
+	//vDir2 = (v2['x'] == 0) ? 0 : v2['y'] / v2['x'];
+	var matrixB = math.matrix([pt1['y'], pt2['y'], v1['y'], v2['y'], a1['y'], a2['y']]);
 	var coefficients = math.multiply(math.inv(matrixA), matrixB);
 	return coefficients._data;
 }
@@ -280,22 +282,38 @@ drawPolynomial(centerPathConstants, p2['x'], context);
 generateComponentParts(centerPathConstants, p1['x'], p2['x'], robotAcc, robotMaxSpeed, Math.sqrt(vel1['x'] * vel1['x'] + vel1['y'] * vel1['y']), Math.sqrt(vel2['x'] * vel2['x'] + vel2['y'] * vel2['y']), 20, halfRobotWidth);
 */
 
-var mode = 0;//0 = start Point, 1 = endPoint selection, 2 = velocity vector selection
-var pts = [];
-function toScreenCoordinates(inches)
+function toScreenX(inches)
 {
     var height = window.innerHeight - 20;
     var width = height * 1.673;
 	return inches * width / 59.91 / 12;
 }
 
-function toInches(coord)
+function toScreenY(inches)
+{
+	var height = window.innerHeight - 20;
+    var width = height * 1.673;
+	return height - inches * width / 59.91 /12;
+}
+
+function toInchesX(coord)
 {
     var height = window.innerHeight - 20;
     var width = height * 1.673;
 	return coord * 59.91 * 12 / width;
 }
 
+function toInchesY(coord)
+{
+	var height = window.innerHeight - 20;
+    var width = height * 1.673;
+	return (height - coord) * 59.91 * 12 / width;
+
+}
+
+var mode = 0;
+var pts = [];
+var vel = [];
 function canvasClicked(e)
 {
 	var x = (e.clientX) - 7;
@@ -321,10 +339,11 @@ function canvasClicked(e)
 		if (toInches(x) < pts[pts.length - 1]['x'])
 			dx = -dx;
 		var dy = m * dx;
-		context.beginPath();
-		context.moveTo(toScreenCoordinates(pts[pts.length - 1]['x']), toScreenCoordinates(pts[pts.length - 1]['y']));
-		context.lineTo(toScreenCoordinates(pts[pts.length - 1]['x']) + dx, toScreenCoordinates(pts[pts.length - 1]['y']) + dy);
-		context.stroke();
+		vel.push({x:dx, y:dy});
+		//context.beginPath();
+		//context.moveTo(toScreenCoordinates(pts[pts.length - 1]['x']), toScreenCoordinates(pts[pts.length - 1]['y']));
+		//context.lineTo(toScreenCoordinates(pts[pts.length - 1]['x']) + dx, toScreenCoordinates(pts[pts.length - 1]['y']) + dy);
+		//context.stroke();
 	}
 }
 
@@ -335,14 +354,14 @@ function refresh()
 
 function setupCanvas() {
     var c2 = document.getElementById("bgCanvas");
-    var ctx = c2.getContext("2d");
+    var ctx2 = c2.getContext("2d");
     height = window.innerHeight - 20;
     width = height * 1.673;
     context.canvas.width = width;
     context.canvas.height = height;
-    ctx.canvas.width = width;
-    ctx.canvas.width = height;
-    ctx.drawImage(base_image, 0, 0, width, height);
+    c2.width = width;
+	c2.height = height;	
+    ctx2.drawImage(base_image, 0, 0, width, height);
 	//console.log("setup");
 }
 
@@ -364,8 +383,7 @@ function drawWayPts() {
 }
 
 function draw() {
-    var ctx = context;
-    ctx.clearRect(0, 0, c.width, c.height);
+    context.clearRect(0, 0, c.width, c.height);
     if ((window.innerHeight - 20) != height) {
         //Browser has been resized
         setupCanvas();
