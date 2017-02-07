@@ -256,31 +256,13 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		context.fillRect(upperPt[0]  - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
 		context.fillRect(lowerPt[0]  - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
 	}
-	console.log(tick);
-	console.log("UPPER PTS:\n");
-	for (b = 0; b < upperPts.length; b++)
-		console.log(upperPts[b][2]);
-	console.log("LOWER PTS:\n");
-	for (b = 0; b < lowerPts.length; b++)
-		console.log(lowerPts[b][2]);
+	//console.log("UPPER PTS:\n");
+	//for (b = 0; b < upperPts.length; b++)
+	//	console.log(upperPts[b][2]);
+	//console.log("LOWER PTS:\n");
+	//for (b = 0; b < lowerPts.length; b++)
+	//	console.log(lowerPts[b][2]);
 }
-
-/*var p1 = {x: 3, y: 35};
-var vel1 = {x: 0, y: 0};
-var acc1 = {x: 0, y: -0.5};
-
-var p2 = {x: 35, y: 5};
-var vel2 = {x: 1.4, y: 1.4};
-var acc2 = {x: 0, y: 0.5};
-var robotMaxSpeed = 3;//2 inches per second
-var robotAcc = 1.0;//0.5 inch per second per second
-var halfRobotWidth = 1;
-
-var centerPathConstants = getPolynomialConstants(p1, p2, vel1, vel2, acc1, acc2);
-
-drawPolynomial(centerPathConstants, p2['x'], context);
-generateComponentParts(centerPathConstants, p1['x'], p2['x'], robotAcc, robotMaxSpeed, Math.sqrt(vel1['x'] * vel1['x'] + vel1['y'] * vel1['y']), Math.sqrt(vel2['x'] * vel2['x'] + vel2['y'] * vel2['y']), 20, halfRobotWidth);
-*/
 
 function toScreenX(inches)
 {
@@ -314,12 +296,13 @@ function toInchesY(coord)
 var mode = 0;
 var pts = [];
 var vel = [];
+var constants = [];//xParam at 0, yParam at 1
 function canvasClicked(e)
 {
 	var x = (e.clientX) - 7;
 	var y = (e.clientY) - 7;
 	
-	var pt = { x: toInches(x), y: toInches(y) };
+	var pt = { x: toInchesX(x), y: toInchesY(y)};
 	console.log(x + ", " + y);
 	if (mode == 0)
 	{
@@ -334,16 +317,17 @@ function canvasClicked(e)
 	else if (mode == 2)
 	{
 		mode = 1;
-		var m = (toInches(y) - pts[pts.length - 1]['y']) / (toInches(x) - pts[pts.length - 1]['x']);
-		var dx = (100)/ (1 + m * m);
-		if (toInches(x) < pts[pts.length - 1]['x'])
-			dx = -dx;
-		var dy = m * dx;
+		dx = toInchesX(x) - pts[pts.length - 1].x
+		dy = toInchesY(y) - pts[pts.length - 1].y
 		vel.push({x:dx, y:dy});
-		//context.beginPath();
-		//context.moveTo(toScreenCoordinates(pts[pts.length - 1]['x']), toScreenCoordinates(pts[pts.length - 1]['y']));
-		//context.lineTo(toScreenCoordinates(pts[pts.length - 1]['x']) + dx, toScreenCoordinates(pts[pts.length - 1]['y']) + dy);
-		//context.stroke();
+		//Time to make polynomials!
+		var vel1;
+		var vel2 = vel[vel.length - 1];
+		if (vel.length == 1)
+			vel1 = {x: 0, y: 0}
+		else
+			vel1 = vel[vel.length - 2];
+		
 	}
 }
 
@@ -366,9 +350,10 @@ function setupCanvas() {
 }
 
 function drawWayPts() {
-    for (var j = 0; j < pts.length; j++) {
-        x = toScreenCoordinates(pts[j].x);
-        y = toScreenCoordinates(pts[j].y);
+    for (var j = 0; j < pts.length; j++)
+	{
+        x = toScreenX(pts[j].x);
+        y = toScreenY(pts[j].y);
         context.beginPath();
         context.arc(x, y, 5, 0, 2 * Math.PI);
         if (j == 0)
@@ -380,6 +365,30 @@ function drawWayPts() {
         context.closePath();
         context.stroke();
     }
+    for (var j = 0; j < vel.length; j++)
+    {
+    	context.lineWidth = 0.5;
+    		x = pts[j + 1].x;
+        	y = pts[j + 1].y;
+    	dx = vel[j].x;
+    	dy = vel[j].y;
+    	VEL_LEN = 20;
+    	if (dx == 0)
+    	{
+        	context.moveTo(toScreenX(x), toScreenY(y - VEL_LEN));
+        	context.lineTo(toScreenX(x), toScreenY(y + VEL_LEN));
+    	}
+    	else
+    	{
+    		m = dy / dx;
+    		console.log(m);
+    		deltaX = Math.sqrt(VEL_LEN * VEL_LEN / (1 + m * m))
+    		deltaY = deltaX * m;
+    		context.moveTo(toScreenX(x - deltaX), toScreenY(y - deltaY));
+    		context.lineTo(toScreenX(x + deltaX), toScreenY(y + deltaY));
+    	}
+    }
+    context.stroke();
 }
 
 function draw() {
