@@ -313,12 +313,12 @@ function toInchesY(coord)
 }
 
 var tempVelIndex = -1;
-var MAX_ROBOT_SPEED = 10.0;
-var MAX_ROBOT_ACC = 2.0;
+var MAX_ROBOT_SPEED = 4.0;
+var MAX_ROBOT_ACC = 4.0;
 var mode = 0;
 var pts = [];
 var vel = [];
-var constants = [];//xParam at 0, yParam at 1
+var polyConstants = [];//xParam at 0, yParam at 1
 function canvasClicked(e)
 {
 	var x = (e.clientX) - 7;
@@ -350,7 +350,7 @@ function canvasClicked(e)
         var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
 		{
-        	vel1 = {x: 0.1, y: 0}
+        	vel1 = {x: 0.0, y: 0}
 		}
         else
 		{
@@ -366,7 +366,7 @@ function canvasClicked(e)
 		TIME_TEMP = 10;
 //		console.log(p1.x + ", " + p1.y)
 //		console.log(p2.x + ", " + p2.y)
-		alert(vel2.x + ", " + vel2.y)
+//		alert(vel2.x + ", " + vel2.y)
 		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
 												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x},
 												{x:0 , y: acc1.x},{x: TIME_TEMP, y: acc2.x});
@@ -374,15 +374,15 @@ function canvasClicked(e)
 												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y},
 												{x:0 , y: acc1.y},{x: TIME_TEMP, y: acc2.y});
 		drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, context)
-		console.log(f(0,xConstantsTemp))
+        polyConstants.push([xConstantsTemp, yConstantsTemp]);
         tempVelIndex = -1;
 	}
 }
 
 function mouseMove(e) {
     if (mode == 2) {
-        dx = toInchesX(e.clientX) - pts[pts.length - 1].x
-        dy = toInchesY(e.clientY) - pts[pts.length - 1].y
+        dx = toInchesX(e.clientX - 7) - pts[pts.length - 1].x
+        dy = toInchesY(e.clientY - 7) - pts[pts.length - 1].y
         angle = Math.atan2(dy, dx);
 		//console.log(angle);
 		radius = MAX_ROBOT_SPEED;
