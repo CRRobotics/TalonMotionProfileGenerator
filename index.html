@@ -6,10 +6,12 @@
 <body onmousemove="mouseMove(event)">
 <canvas id="bgCanvas" style="position:absolute;z-index:0;"></canvas>
 <canvas id="myCanvas" style="position:absolute;z-index:1;"></canvas>
+<button id="reverseButton" style="position:absolute; z-index:2;left: 80vw;top:10vh; width: 10vw;">Reverse</button>
+<button id="genPts" style="position:absolute; z-index: 3; left:80vw;top:20vh; width: 10vw;">Generate Points!</button>
 <script>
 var c = document.getElementById("myCanvas");
 c.onclick = canvasClicked;
-var context = c.getContext("2d");
+var ctx = c.getContext("2d");
 var c2 = document.getElementById("bgCanvas");
 var ctx2 = c2.getContext("2d");
 var img = document.getElementById("field");
@@ -17,8 +19,9 @@ var height = 0;
 var width = 0;
 base_image = new Image();
 base_image.src = 'Field_small.png';
-
 base_image.onload = setupCanvas;
+document.getElementById("reverseButton").onclick = reversePath;
+document.getElementById("genPts").onclick = genPts;
 
 var matrixA;
 var matrixB;
@@ -28,8 +31,8 @@ function getPolynomialConstants(pt1, pt2, v1, v2, a1, a2)
 {
 	matrixA = math.matrix([[Math.pow(pt1['x'], 5), Math.pow(pt1['x'], 4), Math.pow(pt1['x'], 3), Math.pow(pt1['x'], 2), Math.pow(pt1['x'], 1), 1],
 					[Math.pow(pt2['x'], 5), Math.pow(pt2['x'], 4), Math.pow(pt2['x'], 3), Math.pow(pt2['x'], 2), Math.pow(pt2['x'], 1), 1],
-					[5 * Math.pow(pt1['x'], 4), 4 * Math.pow(pt1['x'], 3), 3 * Math.pow(pt1['x'], 2), 2 * Math.pow(pt1['x'], 1), 1, 0],
-					[5 * Math.pow(pt2['x'], 4), 4 * Math.pow(pt2['x'], 3), 3 * Math.pow(pt2['x'], 2), 2 * Math.pow(pt2['x'], 1), 1, 0],
+					[5 * Math.pow(v1['x'], 4), 4 * Math.pow(v1['x'], 3), 3 * Math.pow(v1['x'], 2), 2 * Math.pow(v1['x'], 1), 1, 0],
+					[5 * Math.pow(v2['x'], 4), 4 * Math.pow(v2['x'], 3), 3 * Math.pow(v2['x'], 2), 2 * Math.pow(v2['x'], 1), 1, 0],
 					[20 * Math.pow(pt1['x'], 3), 12 * Math.pow(pt1['x'], 2), 6 * Math.pow(pt1['x'], 1), 2, 0, 0],
 					[20 * Math.pow(pt2['x'], 3), 12 * Math.pow(pt2['x'], 2), 6 * Math.pow(pt2['x'], 1), 2, 0, 0]]);
 	//vDir1 = (v1['x'] == 0) ? 0 : v1['y'] / v1['x'];
@@ -38,6 +41,17 @@ function getPolynomialConstants(pt1, pt2, v1, v2, a1, a2)
 	
 	var coefficients = math.multiply(math.inv(matrixA), matrixB);
 	return coefficients._data;
+}
+
+//Takes in 2pts, velocities
+function getCubicPolynomialConstants(pt1, pt2, v1, v2)
+{
+	matrixA = math.matrix([[Math.pow(pt1.x, 3), Math.pow(pt1.x, 2), Math.pow(pt1.x, 1), 1],
+							[Math.pow(pt2.x, 3), Math.pow(pt2.x, 2), Math.pow(pt2.x, 1), 1],
+							[3 * Math.pow(v1.x, 2), 2 * Math.pow(v1.x, 1), 1, 0],
+							[3 * Math.pow(v2.x, 2), 2 * Math.pow(v2.x, 1), 1, 0]])
+	matrixB = math.matrix([pt1.y, pt2.y, v1.y, v2.y])
+	return (math.multiply(math.inv(matrixA), matrixB))._data;
 }
 
 function getPolynomialConstantsFromPtsOnly(points)
@@ -58,13 +72,14 @@ function getPolynomialConstantsFromPtsOnly(points)
 	return coefficients;
 }
 
+var POLY_DEG = 3;
 //Gets the y-value of a 5th degree polynomial defined by coefficients at x
 function f(x, coefficients)
 {
 	var sum = 0;
-	for (i = 5; i >= 0; i--)
+	for (i = POLY_DEG; i >= 0; i--)
 	{
-		sum += Math.pow(x, i) * coefficients[5 - i];
+		sum += Math.pow(x, i) * coefficients[POLY_DEG - i];
 	}
 	return sum;
 }
@@ -73,9 +88,9 @@ function f(x, coefficients)
 function derivative(x, coefficients)
 {
 	var sum = 0;
-	for (i = 4; i >= 0; i--)
+	for (i = POLY_DEG - 1; i >= 0; i--)
 	{
-		sum += (i + 1) * Math.pow(x, i) * coefficients[4 - i];
+		sum += (i + 1) * Math.pow(x, i) * coefficients[POLY_DEG - 1 - i];
 	}
 	return sum;
 }
@@ -84,9 +99,9 @@ function derivative(x, coefficients)
 function acceleration(x, coefficients)
 {
 	var sum = 0;
-	for (i = 3; i >= 0; i--)
+	for (i = POLY_DEG - 2; i >= 0; i--)
 	{
-		sum += (i + 2) * (i + 1) * Math.pow(x, i) * coefficients[3 - i];
+		sum += (i + 2) * (i + 1) * Math.pow(x, i) * coefficients[POLY_DEG - 2 - i];
 	}
 	return sum;
 }
@@ -130,19 +145,37 @@ function drawPolynomial(constants, upperLimit, ctx)
 	ctx.stroke();
 }
 
-function drawPolynomialParametric(constantsX, constantsY, upperLimit, ctx)
+function drawPolynomialParametric(constantsX, constantsY, upperLimit, reverse, context)
 {
-	ctx.beginPath();
-	ctx.moveTo(toScreenX(f(0, constantsX)), toScreenY(f(0,constantsY)));
-	ctx.lineWidth = 2.0
+	if (reverse)
+		context.strokeStyle = "#ff3030";
+	else
+		context.strokeStyle = "#000000";
+	context.beginPath();
+	context.moveTo(toScreenX(f(0, constantsX)), toScreenY(f(0,constantsY)));
+	context.lineWidth = 2.0
 	for (k = 0; k < upperLimit; k+= 0.01)
 	{
 //		console.log(f(k, constantsX) + ", " +  f(k, constantsY))
-		ctx2.lineTo(toScreenX(f(k, constantsX)), toScreenY(f(k, constantsY)));
+		context.lineTo(toScreenX(f(k, constantsX)), toScreenY(f(k, constantsY)));
 	}
-	ctx2.stroke();
+	context.stroke();
 }
 
+function generateComponentPointsParam(centerConsX, centerConsY, lowerLimit, upperLimit, rSpeed, rAcc, v1, v2, timeInterval, space)
+{
+	totalTime = 0;
+	totalLength = 0;
+	STEP_SIZE = 0.00001;
+	TIME_STEP = 0.25;
+	for (j = lowerLimit; j < upperLimit; j+= STEP_SIZE)
+	{
+		dy = derivative(j, centerConsY) * STEP_SIZE;
+		dx = derivative (j, centerConsX) * STEP_SIZE;
+		totalLength += math.sqrt(1 + Math.pow(dy / dx, 2)) * dx
+	}
+	console.log(totalLength);
+}
 
 function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed, v1, v2, timeInterval, space)
 {
@@ -171,7 +204,7 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 	var upperPts = [];//format: [x, y, vel]
 	var lowerPts = [];
 	var xTraveled = lowerLimit;
-	context.fillStyle = "#ff0000";
+	ctx.fillStyle = "#ff0000";
 	var tick = 0;
 	for(time = 0; time < timeAccelerating; time += TIME_STEP)
 	{
@@ -182,9 +215,9 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 			xTraveled += STEP_SIZE;
 		}
 		tick++;
-		context.fillStyle = "#000000"
-		context.fillRect(xTraveled - 2.5, 800 - f(xTraveled, centerCons) - 2.5, 5, 5);
-		context.fillStyle = "#ff0000";
+		ctx.fillStyle = "#000000"
+		ctx.fillRect(xTraveled - 2.5, 800 - f(xTraveled, centerCons) - 2.5, 5, 5);
+		ctx.fillStyle = "#ff0000";
 		var pts = getUpperAndLowerPathPts(xTraveled, f(xTraveled, centerCons), derivative(xTraveled, centerCons), space);
 		var upperPt = pts[0];
 		var lowerPt = pts[1];
@@ -201,8 +234,8 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		}
 		upperPts.push(upperPt);
 		lowerPts.push(lowerPt);
-		context.fillRect(upperPt[0] - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
-		context.fillRect(lowerPt[0] - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
+		ctx.fillRect(upperPt[0] - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
+		ctx.fillRect(lowerPt[0] - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
 	}
 	
 	
@@ -215,9 +248,9 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 			xTraveled += STEP_SIZE;
 		}
 		tick++;
-		context.fillStyle = "#000000"
-		context.fillRect(xTraveled - 2.5, 800 - f(xTraveled, centerCons) - 2.5, 5, 5);
-		context.fillStyle = "#00ff00";
+		ctx.fillStyle = "#000000"
+		ctx.fillRect(xTraveled - 2.5, 800 - f(xTraveled, centerCons) - 2.5, 5, 5);
+		ctx.fillStyle = "#00ff00";
 		
 		var pts = getUpperAndLowerPathPts(xTraveled, f(xTraveled, centerCons), derivative(xTraveled, centerCons), space);
 		var upperPt = pts[0];
@@ -236,8 +269,8 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		upperPts.push(upperPt);
 		lowerPts.push(lowerPt);
 
-		context.fillRect(upperPt[0] - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
-		context.fillRect(lowerPt[0] - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
+		ctx.fillRect(upperPt[0] - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
+		ctx.fillRect(lowerPt[0] - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
 	}
 	
 	
@@ -252,9 +285,9 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		if (xTraveled > upperLimit)
 			xTraveled = upperLimit;
 		tick++;
-		context.fillStyle = "#000000"
-		context.fillRect(xTraveled - 2.5, 800 - f(xTraveled, centerCons) - 2.5, 5, 5);
-		context.fillStyle = "#0000ff";
+		ctx.fillStyle = "#000000"
+		ctx.fillRect(xTraveled - 2.5, 800 - f(xTraveled, centerCons) - 2.5, 5, 5);
+		ctx.fillStyle = "#0000ff";
 		
 		var pts = getUpperAndLowerPathPts(xTraveled, f(xTraveled, centerCons), derivative(xTraveled, centerCons), space);
 		var upperPt = pts[0];
@@ -272,8 +305,8 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 		}
 		upperPts.push(upperPt);
 		lowerPts.push(lowerPt);
-		context.fillRect(upperPt[0]  - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
-		context.fillRect(lowerPt[0]  - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
+		ctx.fillRect(upperPt[0]  - 2.5, 800 - upperPt[1] - 2.5, 5, 5);
+		ctx.fillRect(lowerPt[0]  - 2.5, 800 - lowerPt[1] - 2.5, 5, 5);
 	}
 	//console.log("UPPER PTS:\n");
 	//for (b = 0; b < upperPts.length; b++)
@@ -313,19 +346,20 @@ function toInchesY(coord)
 }
 
 var tempVelIndex = -1;
-var MAX_ROBOT_SPEED = 15.0;
-var MAX_ROBOT_ACC = 5;
+var MAX_ROBOT_SPEED = 10.0;
+var MAX_ROBOT_ACC = 4.0;
 var mode = 0;
 var pts = [];
 var vel = [];
-var polyConstants = [];//xParam at 0, yParam at 1
+var constants = [];//xParam at 0, yParam at 1, time part1 at 2, time part2 at 3, time part3 = at 4, reversed at 5
+var currentlyReversed = false;
 function canvasClicked(e)
 {
 	var x = (e.clientX) - 7;
 	var y = (e.clientY) - 7;
 	
 	var pt = { x: toInchesX(x), y: toInchesY(y)};
-	console.log(pt.x + ", " + pt.y);
+//	console.log(pt.x + ", " + pt.y);
 	if (mode == 0)
 	{
 		mode = 1;
@@ -350,7 +384,7 @@ function canvasClicked(e)
         var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
 		{
-        	vel1 = {x: 0.1, y: 0}
+        	vel1 = {x: 0.0, y: 0}
 		}
         else
 		{
@@ -358,52 +392,102 @@ function canvasClicked(e)
 		}
 		p1 = pts[pts.length - 2];
 		p2 = pts[pts.length - 1];
-//		deltaX = p2.x - p1.x;
-//		deltaY = p2.y - p1.y;
-		accAngle = vel[vel.length - 1].theta//Math.atan2(deltaY, deltaX);
+		deltaX = p2.x - p1.x;
+		deltaY = p2.y - p1.y;
+		accAngle = Math.atan2(deltaY, deltaX);
 		acc1 = {x: MAX_ROBOT_ACC * Math.cos(accAngle), y: MAX_ROBOT_ACC * Math.sin(accAngle)};
 		acc2 = {x: 0, y: 0};
 		TIME_TEMP = 10;
 //		console.log(p1.x + ", " + p1.y)
 //		console.log(p2.x + ", " + p2.y)
 //		alert(vel2.x + ", " + vel2.y)
-		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
+/*		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
 												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x},
 												{x:0 , y: acc1.x},{x: TIME_TEMP, y: acc2.x});
 		yConstantsTemp = getPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
 												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y},
-												{x:0 , y: acc1.y},{x: TIME_TEMP, y: acc2.y});
-		drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, context)
-        polyConstants.push([xConstantsTemp, yConstantsTemp]);
+												{x:0 , y: acc1.y},{x: TIME_TEMP, y: acc2.y */
+		xConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
+												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x});
+		yConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
+												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y});
+		drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, currentlyReversed, ctx2)
+		
+		constants.push([xConstantsTemp, yConstantsTemp, math.sqrt(vel1.x * vel1.x + vel1.y * vel1.y), math.sqrt(vel2.x * vel2.x + vel2.y * vel2.y), currentlyReversed]);
         tempVelIndex = -1;
 	}
+	draw();
 }
 
 function mouseMove(e) {
-    if (mode == 2) {
+    if (mode == 2)
+	{
         dx = toInchesX(e.clientX - 7) - pts[pts.length - 1].x
         dy = toInchesY(e.clientY - 7) - pts[pts.length - 1].y
         angle = Math.atan2(dy, dx);
 		//console.log(angle);
+		radius = MAX_ROBOT_SPEED;
 		if (tempVelIndex <= -1) {
-            vel.push({r: MAX_ROBOT_SPEED, theta:angle});
+            vel.push({r:radius, theta:angle});
             tempVelIndex = 0;
         }
         else
-            vel[vel.length-1] = {r: MAX_ROBOT_SPEED, theta:angle};
+            vel[vel.length-1] = {r:radius, theta:angle};
+		//Time to make polynomials!
+        var vel1;
+        var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
+        if (vel.length == 1)
+		{
+        	vel1 = {x: 0.0, y: 0}
+		}
+        else
+		{
+            vel1 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 2].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 2].theta)};
+		}
+		draw();
+		p1 = pts[pts.length - 2];
+		p2 = pts[pts.length - 1];
+		deltaX = p2.x - p1.x;
+		deltaY = p2.y - p1.y;
+		TIME_TEMP = 10;
+		xConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
+												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x});
+		yConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
+												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y});
+		drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, currentlyReversed, ctx)
     }
-}
-
-function refresh()
-{
-	//context.drawImage(img, 0, 0);
+	else if (mode == 1)
+	{
+	//Time to make polynomials!
+        var vel1;
+        var vel2 = {x: 0, y: 0};
+        if (vel.length == 0)
+		{
+        	vel1 = {x: 0.0, y: 0}
+		}
+        else
+		{
+            vel1 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
+		}
+		draw();
+		p1 = pts[pts.length - 1];
+		p2 = {x: toInchesX(e.clientX - 7), y: toInchesY(e.clientY - 7)}
+		deltaX = p2.x - p1.x;
+		deltaY = p2.y - p1.y;
+		TIME_TEMP = 10;
+		xConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
+												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x});
+		yConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
+												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y});
+		drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, currentlyReversed, ctx)
+	}
 }
 
 function setupCanvas() {
     height = window.innerHeight - 20;
     width = height * 1.673;
-    context.canvas.width = width;
-    context.canvas.height = height;
+    ctx.canvas.width = width;
+    ctx.canvas.height = height;
     c2.width = width;
 	c2.height = height;
     ctx2.drawImage(base_image, 0, 0, width, height);
@@ -415,21 +499,21 @@ function drawWayPts() {
 	{
         x = toScreenX(pts[j].x);
         y = toScreenY(pts[j].y);
-        context.beginPath();
-        context.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, 2 * Math.PI);
         if (j == 0)
-            context.fillStyle = 'green';
+            ctx.fillStyle = 'green';
         else
-            context.fillStyle = 'red';
-        context.fill();
-        context.lineWidth = 0;
-        context.closePath();
-        context.stroke();
+            ctx.fillStyle = 'red';
+        ctx.fill();
+        ctx.lineWidth = 0;
+        ctx.closePath();
+        ctx.stroke();
     }
     //console.log(vel.length);
     for (var j = 0; j < vel.length; j++)
     {
-    	context.lineWidth = 0.5;
+    	ctx.lineWidth = 0.5;
     		x = pts[j + 1].x;
         	y = pts[j + 1].y;
     	radius = vel[j].r;
@@ -437,8 +521,8 @@ function drawWayPts() {
     	VEL_LEN = 20;
     	if (dx == 0)
     	{
-        	context.moveTo(toScreenX(x), toScreenY(y - VEL_LEN * Math.sin(angle)));
-        	context.lineTo(toScreenX(x), toScreenY(y + VEL_LEN * Math.sin(angle)));
+        	ctx.moveTo(toScreenX(x), toScreenY(y - VEL_LEN * Math.sin(angle)));
+        	ctx.lineTo(toScreenX(x), toScreenY(y + VEL_LEN * Math.sin(angle)));
     	}
     	else
     	{
@@ -446,15 +530,15 @@ function drawWayPts() {
     		//console.log(m);
     		deltaX = VEL_LEN * Math.cos(angle)
     		deltaY = VEL_LEN * Math.sin(angle);
-    		context.moveTo(toScreenX(x - deltaX), toScreenY(y - deltaY));
-    		context.lineTo(toScreenX(x + deltaX), toScreenY(y + deltaY));
+    		ctx.moveTo(toScreenX(x - deltaX), toScreenY(y - deltaY));
+    		ctx.lineTo(toScreenX(x + deltaX), toScreenY(y + deltaY));
     	}
     }
-    context.stroke();
+    ctx.stroke();
 }
 
 function draw() {
-    context.clearRect(0, 0, c.width, c.height);
+    ctx.clearRect(0, 0, c.width, c.height);
     if ((window.innerHeight - 20) != height) {
         //Browser has been resized
         setupCanvas();
@@ -465,8 +549,25 @@ function draw() {
 }
 
 function loop() {
-    window.setTimeout(loop, 15);
+    //window.setTimeout(loop, 15);
     draw();
+}
+
+function reversePath(){
+	if (mode == 1)
+	{
+		alert("reversed path")
+		currentlyReversed = !currentlyReversed;
+		vel[vel.length - 1].theta =  3.1415 + vel[vel.length - 1].theta; 
+	}
+}
+
+function genPts()
+{
+	for (ii = 0; ii < constants.length; ii++)
+	{
+		generateComponentPointsParam(constants[ii][0], constants[ii][1], 0, 10, MAX_ROBOT_SPEED, MAX_ROBOT_ACC, v1, v2, timeInterval, space);
+	}
 }
 
 setupCanvas();
