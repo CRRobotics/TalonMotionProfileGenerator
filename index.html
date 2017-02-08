@@ -8,6 +8,7 @@
 <canvas id="myCanvas" style="position:absolute;z-index:1;"></canvas>
 <button id="reverseButton" style="position:absolute; z-index:2;left: 80vw;top:10vh; width: 10vw;">Reverse</button>
 <button id="genPts" style="position:absolute; z-index: 3; left:80vw;top:20vh; width: 10vw;">Generate Points!</button>
+<button id="genPts" style="position:absolute; z-index: 3; left:80vw;top:30vh; width: 10vw;" onclick='downloadCSV({ filename: "profile.csv" });'>Download CSV!</button>
 <script>
 var c = document.getElementById("myCanvas");
 c.onclick = canvasClicked;
@@ -569,6 +570,59 @@ function genPts()
 		generateComponentPointsParam(constants[ii][0], constants[ii][1], 0, 10, MAX_ROBOT_SPEED, MAX_ROBOT_ACC, v1, v2, timeInterval, space);
 	}
 }
+
+function convertArrayOfObjectsToCSV(args) {
+    var result, ctr, keys, columnDelimiter, lineDelimiter, data;
+
+    data = args.data || null;
+    if (data == null || !data.length) {
+        return null;
+    }
+
+    columnDelimiter = args.columnDelimiter || ',';
+    lineDelimiter = args.lineDelimiter || '\n';
+
+    keys = Object.keys(data[0]);
+
+    result = '';
+    result += keys.join(columnDelimiter);
+    result += lineDelimiter;
+
+    data.forEach(function (item) {
+        ctr = 0;
+        keys.forEach(function (key) {
+            if (ctr > 0) result += columnDelimiter;
+
+            result += item[key];
+            ctr++;
+        });
+        result += lineDelimiter;
+    });
+
+    return result;
+}
+
+window.downloadCSV = function (args) {
+    var data, filename, link;
+
+    var csv = convertArrayOfObjectsToCSV({
+        data: pts //todo: Change to the array or all data values spaced 20ms apart
+    });
+    if (csv == null) return;
+
+    filename = args.filename || 'export.csv';
+
+    if (!csv.match(/^data:text\/csv/i)) {
+        csv = 'data:text/csv;charset=utf-8,' + csv;
+    }
+    data = encodeURI(csv);
+
+    link = document.createElement('a');
+    link.setAttribute('href', data);
+    link.setAttribute('download', filename);
+    link.click();
+}
+
 
 setupCanvas();
 loop();
