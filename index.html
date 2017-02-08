@@ -10,6 +10,8 @@
 var c = document.getElementById("myCanvas");
 c.onclick = canvasClicked;
 var context = c.getContext("2d");
+var c2 = document.getElementById("bgCanvas");
+var ctx2 = c2.getContext("2d");
 var img = document.getElementById("field");
 var height = 0;
 var width = 0;
@@ -18,11 +20,13 @@ base_image.src = 'Field_small.png';
 
 base_image.onload = setupCanvas;
 
+var matrixA;
+var matrixB;
 //	Works for 5th degree polynomials
 //	Takes in 2 pts, 2 velocity vectors, 2 acceleration vectors
 function getPolynomialConstants(pt1, pt2, v1, v2, a1, a2)
 {
-	var matrixA = math.matrix([[Math.pow(pt1['x'], 5), Math.pow(pt1['x'], 4), Math.pow(pt1['x'], 3), Math.pow(pt1['x'], 2), Math.pow(pt1['x'], 1), 1],
+	matrixA = math.matrix([[Math.pow(pt1['x'], 5), Math.pow(pt1['x'], 4), Math.pow(pt1['x'], 3), Math.pow(pt1['x'], 2), Math.pow(pt1['x'], 1), 1],
 					[Math.pow(pt2['x'], 5), Math.pow(pt2['x'], 4), Math.pow(pt2['x'], 3), Math.pow(pt2['x'], 2), Math.pow(pt2['x'], 1), 1],
 					[5 * Math.pow(pt1['x'], 4), 4 * Math.pow(pt1['x'], 3), 3 * Math.pow(pt1['x'], 2), 2 * Math.pow(pt1['x'], 1), 1, 0],
 					[5 * Math.pow(pt2['x'], 4), 4 * Math.pow(pt2['x'], 3), 3 * Math.pow(pt2['x'], 2), 2 * Math.pow(pt2['x'], 1), 1, 0],
@@ -30,7 +34,8 @@ function getPolynomialConstants(pt1, pt2, v1, v2, a1, a2)
 					[20 * Math.pow(pt2['x'], 3), 12 * Math.pow(pt2['x'], 2), 6 * Math.pow(pt2['x'], 1), 2, 0, 0]]);
 	//vDir1 = (v1['x'] == 0) ? 0 : v1['y'] / v1['x'];
 	//vDir2 = (v2['x'] == 0) ? 0 : v2['y'] / v2['x'];
-	var matrixB = math.matrix([pt1['y'], pt2['y'], v1['y'], v2['y'], a1['y'], a2['y']]);
+	matrixB = math.matrix([pt1['y'], pt2['y'], v1['y'], v2['y'], a1['y'], a2['y']]);
+	
 	var coefficients = math.multiply(math.inv(matrixA), matrixB);
 	return coefficients._data;
 }
@@ -125,6 +130,20 @@ function drawPolynomial(constants, upperLimit, ctx)
 	ctx.stroke();
 }
 
+function drawPolynomialParametric(constantsX, constantsY, upperLimit, ctx)
+{
+	ctx.beginPath();
+	ctx.moveTo(toScreenX(f(0, constantsX)), toScreenY(f(0,constantsY)));
+	ctx.lineWidth = 2.0
+	for (k = 0; k < upperLimit; k+= 0.01)
+	{
+		console.log(f(k, constantsX) + ", " +  f(k, constantsY))
+		ctx2.lineTo(toScreenX(f(k, constantsX)), toScreenY(f(k, constantsY)));
+	}
+	ctx2.stroke();
+}
+
+
 function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed, v1, v2, timeInterval, space)
 {
 	var totalTime = 0;
@@ -144,9 +163,9 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 	
 	var lengthConsSpeed = totalLength - lengthAccelerating - lengthDeccelerating;
 	var timeConsSpeed = lengthConsSpeed / rSpeed;
-	console.log(timeAccelerating);
-	console.log(timeConsSpeed);
-	console.log(timeDeccelerating);
+	//console.log(timeAccelerating);
+	//console.log(timeConsSpeed);
+	//console.log(timeDeccelerating);
 	totalTime = timeAccelerating + timeDeccelerating + timeConsSpeed;
 
 	var upperPts = [];//format: [x, y, vel]
@@ -294,6 +313,8 @@ function toInchesY(coord)
 }
 
 var tempVelIndex = -1;
+var MAX_ROBOT_SPEED = 1.0;
+var MAX_ROBOT_ACC = 1.0;
 var mode = 0;
 var pts = [];
 var vel = [];
@@ -304,7 +325,7 @@ function canvasClicked(e)
 	var y = (e.clientY) - 7;
 	
 	var pt = { x: toInchesX(x), y: toInchesY(y)};
-	console.log(x + ", " + y);
+	console.log(pt.x + ", " + pt.y);
 	if (mode == 0)
 	{
 		mode = 1;
@@ -317,20 +338,45 @@ function canvasClicked(e)
 	}
 	else if (mode == 2)
 	{
-        console.log(vel.length);
+        //console.log(vel.length);
         mode = 1;
         dx = toInchesX(x) - pts[pts.length - 1].x
         dy = toInchesY(y) - pts[pts.length - 1].y
-        vel[vel.length - 1] = {x:dx, y:dy};
+		angle = Math.atan2(dy, dx);
+		radius = MAX_ROBOT_SPEED;
+        vel[vel.length - 1] = {r:radius, theta:angle};
         //Time to make polynomials!
         var vel1;
-        var vel2 = vel[vel.length - 1];
+        var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
+		{
         	vel1 = {x: 0, y: 0}
+			alert(vel1.x + ", " + vel1.y);
+		}
         else
-            vel1 = vel[vel.length - 2];
+		{
+            vel1 = {x: vel[vel.length - 2].r * Math.cos(vel[vel.length - 2].theta), y: vel[vel.length - 2].r * Math.sin(vel[vel.length - 2].theta)};
+		}
+		p1 = pts[pts.length - 2];
+		p2 = pts[pts.length - 1];
+		deltaX = p2.x - p1.x;
+		deltaY = p2.y - p1.y;
+		accAngle = Math.atan2(deltaY, deltaX);
+		acc1 = {x: MAX_ROBOT_ACC * Math.cos(accAngle), y: MAX_ROBOT_ACC * Math.sin(accAngle)};
+		acc2 = {x: 0, y: 0};
+		TIME_TEMP = 10;
+//		console.log(p1.x + ", " + p1.y)
+//		console.log(p2.x + ", " + p2.y)
+		console.log(vel2.x + ", " + vel2.y)
+		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
+												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x},
+												{x:0 , y: acc1.x},{x: TIME_TEMP, y: acc2.x});
+		yConstantsTemp = getPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
+												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y},
+												{x:0 , y: acc1.y},{x: TIME_TEMP, y: acc2.y});
+		drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, context)
+		console.log(f(0,xConstantsTemp))
         tempVelIndex = -1;
-		
 	}
 }
 
@@ -338,12 +384,15 @@ function mouseMove(e) {
     if (mode == 2) {
         dx = toInchesX(e.clientX) - pts[pts.length - 1].x
         dy = toInchesY(e.clientY) - pts[pts.length - 1].y
-        if (tempVelIndex <= -1) {
-            vel.push({x:dx, y:dy});
+        angle = Math.atan2(dy, dx);
+		//console.log(angle);
+		radius = MAX_ROBOT_SPEED;
+		if (tempVelIndex <= -1) {
+            vel.push({r:radius, theta:angle});
             tempVelIndex = 0;
         }
         else
-            vel[vel.length-1] = {x:dx, y:dy};
+            vel[vel.length-1] = {r:radius, theta:angle};
     }
 }
 
@@ -353,8 +402,6 @@ function refresh()
 }
 
 function setupCanvas() {
-    var c2 = document.getElementById("bgCanvas");
-    var ctx2 = c2.getContext("2d");
     height = window.innerHeight - 20;
     width = height * 1.673;
     context.canvas.width = width;
@@ -387,20 +434,20 @@ function drawWayPts() {
     	context.lineWidth = 0.5;
     		x = pts[j + 1].x;
         	y = pts[j + 1].y;
-    	dx = vel[j].x;
-    	dy = vel[j].y;
+    	radius = vel[j].r;
+    	angle = vel[j].theta;
     	VEL_LEN = 20;
     	if (dx == 0)
     	{
-        	context.moveTo(toScreenX(x), toScreenY(y - VEL_LEN));
-        	context.lineTo(toScreenX(x), toScreenY(y + VEL_LEN));
+        	context.moveTo(toScreenX(x), toScreenY(y - VEL_LEN * Math.sin(angle)));
+        	context.lineTo(toScreenX(x), toScreenY(y + VEL_LEN * Math.sin(angle)));
     	}
     	else
     	{
     		m = dy / dx;
     		//console.log(m);
-    		deltaX = Math.sqrt(VEL_LEN * VEL_LEN / (1 + m * m))
-    		deltaY = deltaX * m;
+    		deltaX = VEL_LEN * Math.cos(angle)
+    		deltaY = VEL_LEN * Math.sin(angle);
     		context.moveTo(toScreenX(x - deltaX), toScreenY(y - deltaY));
     		context.lineTo(toScreenX(x + deltaX), toScreenY(y + deltaY));
     	}
