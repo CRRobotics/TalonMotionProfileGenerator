@@ -137,7 +137,7 @@ function drawPolynomialParametric(constantsX, constantsY, upperLimit, ctx)
 	ctx.lineWidth = 2.0
 	for (k = 0; k < upperLimit; k+= 0.01)
 	{
-		console.log(f(k, constantsX) + ", " +  f(k, constantsY))
+//		console.log(f(k, constantsX) + ", " +  f(k, constantsY))
 		ctx2.lineTo(toScreenX(f(k, constantsX)), toScreenY(f(k, constantsY)));
 	}
 	ctx2.stroke();
@@ -313,8 +313,8 @@ function toInchesY(coord)
 }
 
 var tempVelIndex = -1;
-var MAX_ROBOT_SPEED = 1.0;
-var MAX_ROBOT_ACC = 1.0;
+var MAX_ROBOT_SPEED = 10.0;
+var MAX_ROBOT_ACC = 2.0;
 var mode = 0;
 var pts = [];
 var vel = [];
@@ -350,12 +350,11 @@ function canvasClicked(e)
         var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
 		{
-        	vel1 = {x: 0, y: 0}
-			alert(vel1.x + ", " + vel1.y);
+        	vel1 = {x: 0.1, y: 0}
 		}
         else
 		{
-            vel1 = {x: vel[vel.length - 2].r * Math.cos(vel[vel.length - 2].theta), y: vel[vel.length - 2].r * Math.sin(vel[vel.length - 2].theta)};
+            vel1 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 2].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 2].theta)};
 		}
 		p1 = pts[pts.length - 2];
 		p2 = pts[pts.length - 1];
@@ -367,7 +366,7 @@ function canvasClicked(e)
 		TIME_TEMP = 10;
 //		console.log(p1.x + ", " + p1.y)
 //		console.log(p2.x + ", " + p2.y)
-		console.log(vel2.x + ", " + vel2.y)
+		alert(vel2.x + ", " + vel2.y)
 		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
 												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x},
 												{x:0 , y: acc1.x},{x: TIME_TEMP, y: acc2.x});
