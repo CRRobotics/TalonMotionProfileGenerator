@@ -313,7 +313,7 @@ function toInchesY(coord)
 }
 
 var tempVelIndex = -1;
-var MAX_ROBOT_SPEED = 20.0;
+var MAX_ROBOT_SPEED = 15.0;
 var MAX_ROBOT_ACC = 5;
 var mode = 0;
 var pts = [];
@@ -350,7 +350,7 @@ function canvasClicked(e)
         var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
 		{
-        	vel1 = {x: 0.0, y: 0}
+        	vel1 = {x: 0.1, y: 0}
 		}
         else
 		{
