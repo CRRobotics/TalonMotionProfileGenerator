@@ -41,6 +41,7 @@ function getPolynomialConstants(pt1, pt2, v1, v2, a1, a2)
 	matrixA = math.matrix([[Math.pow(pt1['x'], 5), Math.pow(pt1['x'], 4), Math.pow(pt1['x'], 3), Math.pow(pt1['x'], 2), Math.pow(pt1['x'], 1), 1],
 					[Math.pow(pt2['x'], 5), Math.pow(pt2['x'], 4), Math.pow(pt2['x'], 3), Math.pow(pt2['x'], 2), Math.pow(pt2['x'], 1), 1],
 					[5 * Math.pow(v1['x'], 4), 4 * Math.pow(v1['x'], 3), 3 * Math.pow(v1['x'], 2), 2 * Math.pow(v1['x'], 1), 1, 0],
+					//[60 * pt2.x * pt2.x, 24 * pt2.x, 6, 0, 0,0 ],
 					[5 * Math.pow(v2['x'], 4), 4 * Math.pow(v2['x'], 3), 3 * Math.pow(v2['x'], 2), 2 * Math.pow(v2['x'], 1), 1, 0],
 					[20 * Math.pow(pt1['x'], 3), 12 * Math.pow(pt1['x'], 2), 6 * Math.pow(pt1['x'], 1), 2, 0, 0],
 					[20 * Math.pow(pt2['x'], 3), 12 * Math.pow(pt2['x'], 2), 6 * Math.pow(pt2['x'], 1), 2, 0, 0]]);
@@ -81,7 +82,7 @@ function getPolynomialConstantsFromPtsOnly(points)
 	return coefficients;
 }
 
-var POLY_DEG = 3;
+var POLY_DEG = 5;
 //Gets the y-value of a 5th degree polynomial defined by coefficients at x
 function f(x, coefficients)
 {
@@ -154,6 +155,12 @@ function drawPolynomial(constants, upperLimit, ctx)
 	ctx.stroke();
 }
 
+function drawBlip(xIn, yIn, color, context)
+{
+	context.fillStyle = color;
+	context.fillRect(toScreenX(xIn) - 2, toScreenY(yIn) - 2, 4, 4);
+}
+
 function drawPolynomialParametric(constantsX, constantsY, upperLimit, reverse, context)
 {
 	if (reverse)
@@ -169,22 +176,9 @@ function drawPolynomialParametric(constantsX, constantsY, upperLimit, reverse, c
 		context.lineTo(toScreenX(f(k, constantsX)), toScreenY(f(k, constantsY)));
 	}
 	context.stroke();
+	context.strokeStyle = "#000000"
 }
 
-function generateComponentPointsParam(centerConsX, centerConsY, lowerLimit, upperLimit, rSpeed, rAcc, v1, v2, timeInterval, space)
-{
-	totalTime = 0;
-	totalLength = 0;
-	STEP_SIZE = 0.00001;
-	TIME_STEP = 0.25;
-	for (j = lowerLimit; j < upperLimit; j+= STEP_SIZE)
-	{
-		dy = derivative(j, centerConsY) * STEP_SIZE;
-		dx = derivative (j, centerConsX) * STEP_SIZE;
-		totalLength += math.sqrt(1 + Math.pow(dy / dx, 2)) * dx
-	}
-	console.log(totalLength);
-}
 
 function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed, v1, v2, timeInterval, space)
 {
@@ -355,8 +349,8 @@ function toInchesY(coord)
 }
 
 var tempVelIndex = -1;
-var MAX_ROBOT_SPEED = 10.0;
-var MAX_ROBOT_ACC = 4.0;
+var MAX_ROBOT_SPEED = 8.0;
+var MAX_ROBOT_ACC = 3.0;
 var mode = 0;
 var pts = [];
 var vel = [];
@@ -368,7 +362,7 @@ function canvasClicked(e)
 	var y = (e.clientY) - 7;
 	
 	var pt = { x: toInchesX(x), y: toInchesY(y)};
-//	console.log(pt.x + ", " + pt.y);
+	console.log(pt.x + ", " + pt.y);
 	if (mode == 0)
 	{
 		mode = 1;
@@ -387,13 +381,18 @@ function canvasClicked(e)
         dy = toInchesY(y) - pts[pts.length - 1].y
 		angle = Math.atan2(dy, dx);
 		radius = MAX_ROBOT_SPEED;
-        vel[vel.length - 1] = {r:radius, theta:angle};
-        //Time to make polynomials!
+		if (vel.length >= 1)
+			vel[vel.length - 1] = {r:radius, theta:angle};
+        else
+		{
+			vel.push({r:radius, theta:angle});
+		}
+		//Time to make polynomials!
         var vel1;
         var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
 		{
-        	vel1 = {x: 0.0, y: 0}
+        	vel1 = {x: 8.0, y: 0}
 		}
         else
 		{
@@ -403,27 +402,75 @@ function canvasClicked(e)
 		p2 = pts[pts.length - 1];
 		deltaX = p2.x - p1.x;
 		deltaY = p2.y - p1.y;
-		accAngle = Math.atan2(deltaY, deltaX);
+		distance = Math.sqrt(deltaY * deltaY + deltaX * deltaX);
+		
+		accAngle =  Math.atan2(deltaY, deltaX);
+		if (Math.abs(vel[vel.length - 1].theta - Math.atan2(vel1.y, vel1.x)) > 0.5)
+		{
+			if (vel[vel.length - 1].theta - Math.atan2(vel1.y, vel1.x) > 0)
+				accAngle += 30;
+			else
+				accAngle -= 30;
+		}
+		console.log((vel[vel.length -1].theta - Math.atan2(vel1.y, vel1.x)) * 180 / 3.1415);
 		acc1 = {x: MAX_ROBOT_ACC * Math.cos(accAngle), y: MAX_ROBOT_ACC * Math.sin(accAngle)};
 		acc2 = {x: 0, y: 0};
 		TIME_TEMP = 10;
 //		console.log(p1.x + ", " + p1.y)
 //		console.log(p2.x + ", " + p2.y)
 //		alert(vel2.x + ", " + vel2.y)
-/*		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
+		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
 												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x},
 												{x:0 , y: acc1.x},{x: TIME_TEMP, y: acc2.x});
 		yConstantsTemp = getPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
 												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y},
-												{x:0 , y: acc1.y},{x: TIME_TEMP, y: acc2.y */
-		xConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
-												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x});
-		yConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
-												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y});
-		drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, currentlyReversed, ctx2)
+												{x:0 , y: acc1.y},{x: TIME_TEMP, y: acc2.y}) 
+//		xConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
+//												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x});
+//		yConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
+//												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y});
+				
+/*		totalTime = 0;
+		totalCurveLength = 0.0;
+		STEP_SIZE = 0.01;
+		TIME_STEP = 0.25;
+		for (j = 0; j < TIME_TEMP; j+= STEP_SIZE)
+		{
+			dyParam = derivative(j, yConstantsTemp) * STEP_SIZE;
+			dxParam = derivative (j, xConstantsTemp) * STEP_SIZE;
+			totalCurveLength = totalCurveLength +  math.sqrt(dxParam * dxParam + dyParam * dyParam);
+		}
+		//console.log(totalCurveLength);
+		initialVel = math.sqrt(vel1.x * vel1.x + vel1.y * vel1.y)
+		finalVel = math.sqrt(vel2.x * vel2.x + vel2.y * vel2.y)
+		var time_part1 = (MAX_ROBOT_SPEED - initialVel) / MAX_ROBOT_ACC;//accelerating
+		var length_part1 = (MAX_ROBOT_SPEED + initialVel) / 2 * time_part1;
 		
-		constants.push([xConstantsTemp, yConstantsTemp, math.sqrt(vel1.x * vel1.x + vel1.y * vel1.y), math.sqrt(vel2.x * vel2.x + vel2.y * vel2.y), currentlyReversed]);
-        tempVelIndex = -1;
+		var time_part3 = (MAX_ROBOT_SPEED - finalVel) / MAX_ROBOT_ACC;//deccelerating
+		var length_part3 = (MAX_ROBOT_SPEED + finalVel) / 2 * time_part3; 
+		
+		var length_part2 = totalCurveLength - length_part1 - length_part3;//constant speed
+		var time_part2 = length_part2 / MAX_ROBOT_SPEED;
+		if (length_part2 < 0)
+		{
+			alert("Error: path too short");
+			return;
+		}
+		var time_tot = time_part1 + time_part2 + time_part3;
+		var horizDilation = 10 / time_tot
+//		xConstantsFinal = getPolynomialConstants({x:0 , y: p1.x},{x: time_tot, y: p2.x},
+//												{x:0 , y: vel1.x * horizDilation},{x: time_tot, y: vel2.x * horizDilation},
+//												{x:0 , y: acc1.x * horizDilation * horizDilation},{x: time_tot, y: acc2.x * horizDilation * horizDilation});
+//		yConstantsFinal = getPolynomialConstants({x:0 , y: p1.y},{x: time_tot, y: p2.y},
+//												{x:0 , y: vel1.y * horizDilation},{x: time_tot, y: vel2.y * horizDilation},
+//												{x:0 , y: acc1.y * horizDilation * horizDilation},{x: time_tot, y: acc2.y * horizDilation * horizDilation}) 
+		
+		//console.log(length_part1 + ", " + length_part2 + ", " + length_part3)
+		//console.log(time_tot)
+		constants.push([xConstantsTemp, yConstantsTemp, [time_part1, length_part1], [time_part2, length_part2], [time_part3, length_part3], currentlyReversed]);*/
+		constants.push([xConstantsTemp, yConstantsTemp, currentlyReversed]);
+        drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, currentlyReversed, ctx2)
+		tempVelIndex = -1;
 	}
 	draw();
 }
@@ -447,7 +494,7 @@ function mouseMove(e) {
         var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
 		{
-        	vel1 = {x: 0.0, y: 0}
+        	vel1 = {x: 8.0, y: 0}
 		}
         else
 		{
@@ -458,11 +505,26 @@ function mouseMove(e) {
 		p2 = pts[pts.length - 1];
 		deltaX = p2.x - p1.x;
 		deltaY = p2.y - p1.y;
+		accAngle = Math.atan2(deltaY, deltaX);
+		if (Math.abs(vel[vel.length - 1].theta - Math.atan2(vel1.y, vel1.x)) > 0.5)
+		{
+			if (vel[vel.length - 1].theta - Math.atan2(vel1.y, vel1.x) > 0)
+				accAngle += 30;
+			else
+				accAngle -= 30;
+		}
+		acc1 = {x: MAX_ROBOT_ACC * Math.cos(accAngle), y: MAX_ROBOT_ACC * Math.sin(accAngle)};
+		acc2 = {x: 0, y: 0};
 		TIME_TEMP = 10;
-		xConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
-												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x});
-		yConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
-												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y});
+//		console.log(p1.x + ", " + p1.y)
+//		console.log(p2.x + ", " + p2.y)
+//		alert(vel2.x + ", " + vel2.y)
+		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
+												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x},
+												{x:0 , y: acc1.x},{x: TIME_TEMP, y: acc2.x});
+		yConstantsTemp = getPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
+												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y},
+												{x:0 , y: acc1.y},{x: TIME_TEMP, y: acc2.y}) 
 		drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, currentlyReversed, ctx)
     }
 	else if (mode == 1)
@@ -483,11 +545,16 @@ function mouseMove(e) {
 		p2 = {x: toInchesX(e.clientX - 7), y: toInchesY(e.clientY - 7)}
 		deltaX = p2.x - p1.x;
 		deltaY = p2.y - p1.y;
+		accAngle = Math.atan2(deltaY, deltaX);
+		acc1 = {x: MAX_ROBOT_ACC * Math.cos(accAngle), y: MAX_ROBOT_ACC * Math.sin(accAngle)};
+		acc2 = {x: 0, y: 0};
 		TIME_TEMP = 10;
-		xConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
-												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x});
-		yConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
-												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y});
+		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
+												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x},
+												{x:0 , y: acc1.x},{x: TIME_TEMP, y: acc2.x});
+		yConstantsTemp = getPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
+												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y},
+												{x:0 , y: acc1.y},{x: TIME_TEMP, y: acc2.y}) 
 		drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, currentlyReversed, ctx)
 	}
 }
@@ -571,11 +638,147 @@ function reversePath(){
 	}
 }
 
+var speedPts;//speed top, speed bottom, time 
+var upperPts;//GetUpperAndLowerPathpts(x,y,slope,m)
+var lowerPts;//
 function genPts()
 {
-	for (ii = 0; ii < constants.length; ii++)
+	act_robot_speed = 60;
+	act_robot_acc = 60;
+	currentVel = 0;
+	
+	var TIME_STEP = 0.10;
+	var LEN_STEP = 0.01;
+	var curveLimit = 0;
+	
+	timeToDeccelerate = act_robot_speed / act_robot_acc
+	lenToDeccelerate = (act_robot_speed + 0) / 2 * timeToDeccelerate
+	var limitToStartDeccelerate;
+	var constantsToStartDeccelerate;
+	for (ii = constants.length - 1; ii >= 0 && lenToDeccelerate >= 0; ii--)
 	{
-		generateComponentPointsParam(constants[ii][0], constants[ii][1], 0, 10, MAX_ROBOT_SPEED, MAX_ROBOT_ACC, v1, v2, timeInterval, space);
+		constantsToStartDeccelerate = ii;
+		curveLimit = 10;
+		while (curveLimit >= 0 && lenToDeccelerate >= 0)
+		{
+			dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
+			dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
+			lenToDeccelerate -=  math.sqrt(dxParam * dxParam + dyParam * dyParam)
+			curveLimit -= LEN_STEP;
+		}
+		limitToStartDeccelerate = curveLimit;
+	}
+	console.log("limit: " + limitToStartDeccelerate);
+	console.log("poly: " + constantsToStartDeccelerate)
+	var distToTravel = 0;
+	for (ii = 0; ii < constantsToStartDeccelerate; ii++)
+	{
+//xParam at 0, yParam at 1, time part1 at 2, time part2 at 3, time part3 = at 4, reversed at 5
+		curveLimit = 0;
+		while (curveLimit <= 10)
+		{
+			if (currentVel < act_robot_speed)// accelerate
+			{
+				if (distToTravel <= 0)
+					distToTravel = (currentVel + Math.min(currentVel + act_robot_acc * TIME_STEP, act_robot_speed)) / 2 * TIME_STEP;
+				//console.log("DISTtoTRAVEL: " + distToTravel)
+				currentVel = Math.min(currentVel + act_robot_acc * TIME_STEP, act_robot_speed)
+				var dxParam = 0;
+				var dyParam = 0;
+				while (distToTravel > 0 && curveLimit <= 10)
+				{
+					dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
+					dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
+					distToTravel -=  math.sqrt(dxParam * dxParam + dyParam * dyParam);
+					curveLimit += LEN_STEP;
+				}
+				dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
+				pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+				drawBlip(pathPts[0][0], pathPts[0][1], "#00ff00", ctx2)
+				drawBlip(pathPts[1][0], pathPts[1][1], "#00ff00", ctx2)
+			}
+			else//Constant speed
+			{
+				if (distToTravel <= 0)
+					distToTravel = act_robot_speed * TIME_STEP
+				//console.log("DISTTOTRAVEL: " + distToTravel)
+				while (distToTravel > 0 && curveLimit <= 10)
+				{
+					dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
+					dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
+					distToTravel -=  math.sqrt(dxParam * dxParam + dyParam * dyParam);
+					curveLimit += LEN_STEP;
+				}
+				dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
+				pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+				drawBlip(pathPts[0][0], pathPts[0][1], "#0000ff", ctx2)
+				drawBlip(pathPts[1][0], pathPts[1][1], "#0000ff", ctx2)
+			}
+		}
+	}
+	
+	for (ii = constantsToStartDeccelerate; ii < constants.length; ii++)
+	{
+		curveLimit = 0;
+		while (curveLimit < 10)
+		{
+			if (ii == constantsToStartDeccelerate)
+			{
+				if (curveLimit < limitToStartDeccelerate)// constant speed
+				{
+					if (distToTravel <= 0)
+						distToTravel = act_robot_speed * TIME_STEP
+					//console.log("DISTTOTRAVEL: " + distToTravel)
+					while (distToTravel > 0 && curveLimit <= 10)
+					{
+						dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
+						dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
+						distToTravel -=  math.sqrt(dxParam * dxParam + dyParam * dyParam);
+						curveLimit += LEN_STEP;
+					}
+					dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
+					pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+					drawBlip(pathPts[0][0], pathPts[0][1], "#0000ff", ctx2)
+					drawBlip(pathPts[1][0], pathPts[1][1], "#0000ff", ctx2)
+				}
+				else
+				{
+					if (distToTravel <= 0)
+						distToTravel = (currentVel + Math.max(currentVel - act_robot_acc * TIME_STEP, 0)) / 2 * TIME_STEP;
+					currentVel = Math.max(currentVel - act_robot_acc * TIME_STEP, 0)
+					while (distToTravel > 0 && curveLimit <= 10)
+					{
+						dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
+						dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
+						distToTravel -=  math.sqrt(dxParam * dxParam + dyParam * dyParam);
+						curveLimit += LEN_STEP;
+					}
+					dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
+					pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+					drawBlip(pathPts[0][0], pathPts[0][1], "#ff99ff", ctx2)
+					drawBlip(pathPts[1][0], pathPts[1][1], "#ff99ff", ctx2)
+				}
+			}
+			else
+			{
+				if (distToTravel <= 0)
+						distToTravel = (currentVel + Math.max(currentVel - act_robot_acc * TIME_STEP, 0)) / 2 * TIME_STEP;
+				currentVel = Math.max(currentVel - act_robot_acc * TIME_STEP, 0)
+				if (currentVel <= 0)
+					curveLimit = 11;
+				while (distToTravel > 0 && curveLimit <= 10)
+				{
+					dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
+					dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
+					distToTravel -=  math.sqrt(dxParam * dxParam + dyParam * dyParam);
+					curveLimit += LEN_STEP;
+				}
+				dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
+				pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+				drawBlip(pathPts[0][0], pathPts[0][1], "#ff99ff", ctx2)
+				drawBlip(pathPts[1][0], pathPts[1][1], "#ff99ff", ctx2)
+			}
+		}
 	}
 }
 
@@ -616,6 +819,7 @@ window.downloadCSV = function (args) {
     var csv = convertArrayOfObjectsToCSV({
         data: pts //todo: Change to the array or all data values spaced 20ms apart
     });
+	
     if (csv == null) return;
 
     filename = args.filename || 'export.csv';
@@ -624,7 +828,6 @@ window.downloadCSV = function (args) {
         csv = 'data:text/csv;charset=utf-8,' + csv;
     }
     data = encodeURI(csv);
-
     link = document.createElement('a');
     link.setAttribute('href', data);
     link.setAttribute('download', filename);
