@@ -9,7 +9,7 @@
     <link rel="shortcut icon" href="/TalonMotionProfileGenerator/favicon.ico">
     <meta name="msapplication-config" content="/TalonMotionProfileGenerator/browserconfig.xml">
     <meta name="theme-color" content="#ffffff">
-    <script src="math.js"></script>
+    <script src="/TalonMotionProfileGenerator/math.js"></script>
 </head>
 <body onmousemove="mouseMove(event)">
 <canvas id="bgCanvas" style="position:absolute;z-index:0;"></canvas>
@@ -31,6 +31,8 @@ base_image.src = 'Field_small.png';
 base_image.onload = setupCanvas;
 document.getElementById("reverseButton").onclick = reversePath;
 document.getElementById("genPts").onclick = genPts;
+
+var finalData = [];
 
 var matrixA;
 var matrixB;
@@ -817,7 +819,7 @@ window.downloadCSV = function (args) {
     var data, filename, link;
 
     var csv = convertArrayOfObjectsToCSV({
-        data: pts //todo: Change to the array or all data values spaced 20ms apart
+        data: finalData //todo: Change to the array or all data values spaced 20ms apart
     });
 	
     if (csv == null) return;

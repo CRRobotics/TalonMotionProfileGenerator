@@ -22,3 +22,6 @@
       background: linear-gradient(#152B40, #152B40);
       color: white
     }
+body {
+        background-color: rgba(0, 0, 0, 0.82);
+    }
