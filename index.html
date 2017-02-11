@@ -352,7 +352,7 @@ function toInchesY(coord)
 
 var tempVelIndex = -1;
 var MAX_ROBOT_SPEED = 8.0;
-var MAX_ROBOT_ACC = 3.0;
+var MAX_ROBOT_ACC = 5.0;
 var mode = 0;
 var pts = [];
 var vel = [];
@@ -640,16 +640,18 @@ function reversePath(){
 	}
 }
 
-var speedPts;//speed top, speed bottom, time 
-var upperPts;//GetUpperAndLowerPathpts(x,y,slope,m)
-var lowerPts;//
+var speedPts = [];//speed top, speed bottom, time 
+var upperPts = [];//x, y
+var lowerPts = [];//x, y
 function genPts()
 {
-	act_robot_speed = 60;
-	act_robot_acc = 60;
+	
+
+	act_robot_speed = 10;
+	act_robot_acc = 50;
 	currentVel = 0;
 	
-	var TIME_STEP = 0.10;
+	var TIME_STEP = 0.02;
 	var LEN_STEP = 0.01;
 	var curveLimit = 0;
 	
@@ -657,21 +659,26 @@ function genPts()
 	lenToDeccelerate = (act_robot_speed + 0) / 2 * timeToDeccelerate
 	var limitToStartDeccelerate;
 	var constantsToStartDeccelerate;
-	for (ii = constants.length - 1; ii >= 0 && lenToDeccelerate >= 0; ii--)
+	if (constants.length > 1)
 	{
-		constantsToStartDeccelerate = ii;
-		curveLimit = 10;
-		while (curveLimit >= 0 && lenToDeccelerate >= 0)
+		for (ii = constants.length - 1; ii >= 0 && lenToDeccelerate >= 0; ii--)
 		{
-			dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
-			dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
-			lenToDeccelerate -=  math.sqrt(dxParam * dxParam + dyParam * dyParam)
-			curveLimit -= LEN_STEP;
+			constantsToStartDeccelerate = ii;
+			curveLimit = 10;
+			while (curveLimit >= 0 && lenToDeccelerate >= 0)
+			{
+				dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
+				dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
+				lenToDeccelerate -=  math.sqrt(dxParam * dxParam + dyParam * dyParam)
+				curveLimit -= LEN_STEP;
+			}
+			limitToStartDeccelerate = curveLimit;
 		}
-		limitToStartDeccelerate = curveLimit;
+//	console.log("limit: " + limitToStartDeccelerate);
+//	console.log("poly: " + constantsToStartDeccelerate)
 	}
-	console.log("limit: " + limitToStartDeccelerate);
-	console.log("poly: " + constantsToStartDeccelerate)
+	else
+		constantsToStartDeccelerate = constants.length;
 	var distToTravel = 0;
 	for (ii = 0; ii < constantsToStartDeccelerate; ii++)
 	{
@@ -696,6 +703,15 @@ function genPts()
 				}
 				dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
 				pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+				if (upperPts.length >= 1)
+				{
+					var velUpper = Math.sqrt(Math.pow(pathPts[0][0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[0][1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP
+					var velLower = Math.sqrt(Math.pow(pathPts[1][0] - lowerPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[1][1] - lowerPts[upperPts.length - 1][1], 2)) / TIME_STEP
+					speedPts.push([velUpper, velLower, TIME_STEP]);
+				}
+				upperPts.push(pathPts[0]);
+				lowerPts.push(pathPts[1]);
+				
 				drawBlip(pathPts[0][0], pathPts[0][1], "#00ff00", ctx2)
 				drawBlip(pathPts[1][0], pathPts[1][1], "#00ff00", ctx2)
 			}
@@ -713,6 +729,13 @@ function genPts()
 				}
 				dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
 				pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+				
+				var velUpper = Math.sqrt(Math.pow(pathPts[0][0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[0][1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP
+				var velLower = Math.sqrt(Math.pow(pathPts[1][0] - lowerPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[1][1] - lowerPts[upperPts.length - 1][1], 2)) / TIME_STEP
+				speedPts.push([velUpper, velLower, TIME_STEP]);
+				upperPts.push(pathPts[0]);
+				lowerPts.push(pathPts[1]);
+				
 				drawBlip(pathPts[0][0], pathPts[0][1], "#0000ff", ctx2)
 				drawBlip(pathPts[1][0], pathPts[1][1], "#0000ff", ctx2)
 			}
@@ -740,6 +763,15 @@ function genPts()
 					}
 					dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
 					pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+					
+					if (upperPts.length >= 1)
+					{
+						var velUpper = Math.sqrt(Math.pow(pathPts[0][0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[0][1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP
+						var velLower = Math.sqrt(Math.pow(pathPts[1][0] - lowerPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[1][1] - lowerPts[upperPts.length - 1][1], 2)) / TIME_STEP
+						speedPts.push([velUpper, velLower, TIME_STEP]);
+					}
+					upperPts.push(pathPts[0]);
+					lowerPts.push(pathPts[1]);
 					drawBlip(pathPts[0][0], pathPts[0][1], "#0000ff", ctx2)
 					drawBlip(pathPts[1][0], pathPts[1][1], "#0000ff", ctx2)
 				}
@@ -757,6 +789,15 @@ function genPts()
 					}
 					dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
 					pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+					if (upperPts.length >= 1)
+					{
+						var velUpper = Math.sqrt(Math.pow(pathPts[0][0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[0][1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP
+						var velLower = Math.sqrt(Math.pow(pathPts[1][0] - lowerPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[1][1] - lowerPts[upperPts.length - 1][1], 2)) / TIME_STEP
+						speedPts.push([velUpper, velLower, TIME_STEP]);
+					}
+					upperPts.push(pathPts[0]);
+					lowerPts.push(pathPts[1]);
+					
 					drawBlip(pathPts[0][0], pathPts[0][1], "#ff99ff", ctx2)
 					drawBlip(pathPts[1][0], pathPts[1][1], "#ff99ff", ctx2)
 				}
@@ -777,6 +818,12 @@ function genPts()
 				}
 				dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
 				pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+				
+				var velUpper = Math.sqrt(Math.pow(pathPts[0][0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[0][1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP
+				var velLower = Math.sqrt(Math.pow(pathPts[1][0] - lowerPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[1][1] - lowerPts[upperPts.length - 1][1], 2)) / TIME_STEP
+				speedPts.push([velUpper, velLower, TIME_STEP]);
+				upperPts.push(pathPts[0]);
+				lowerPts.push(pathPts[1]);
 				drawBlip(pathPts[0][0], pathPts[0][1], "#ff99ff", ctx2)
 				drawBlip(pathPts[1][0], pathPts[1][1], "#ff99ff", ctx2)
 			}
@@ -819,7 +866,11 @@ window.downloadCSV = function (args) {
     var data, filename, link;
 
     var csv = convertArrayOfObjectsToCSV({
+<<<<<<< HEAD
         data: finalData //todo: Change to the array or all data values spaced 20ms apart
+=======
+       data: speedPts //todo: Change to the array or all data values spaced 20ms apart
+>>>>>>> origin/master
     });
 	
     if (csv == null) return;
