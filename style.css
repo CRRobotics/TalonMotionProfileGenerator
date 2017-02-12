@@ -1,27 +1,65 @@
 .btn {
-      display: inline-block;
-      #border: #2e6da4;
-      border-style: solid;
-      border-width: 2px;
-      width: 190px;
-      height: 54px;
-      border-radius: 2px;
-      #background: linear-gradient(#FFFFFF, #B0B0B0);
-      color: blue;
-      margin-top: 0px;
-      margin-bottom: 0x;
-      margin-right: 0px;
-      margin-left: 0px;
-      vertical-align: middle;
-    }
-    .btn:hover {
-      background: linear-gradient(#152B40, #152B40);
-      color: white
-    }
-    .btn:focus {
-      background: linear-gradient(#152B40, #152B40);
-      color: white
-    }
+  display: inline-block;
+  #border: #2e6da4;
+  border-style: solid;
+  border-width: 2px;
+  width: 190px;
+  height: 54px;
+  border-radius: 2px;
+  #background: linear-gradient(#FFFFFF, #B0B0B0);
+  color: blue;
+  margin-top: 0px;
+  margin-bottom: 0x;
+  margin-right: 0px;
+  margin-left: 0px;
+  vertical-align: middle;
+  }
+.btn:hover {
+  background: linear-gradient(#152B40, #152B40);
+  color: white
+}
+.btn:focus {
+  background: linear-gradient(#152B40, #152B40);
+  color: white
+}
 body {
-        background-color: rgba(0, 0, 0, 0.82);
-    }
+    background-color: rgba(0, 0, 0, 0.82);
+}
+.sidenav {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: #111;
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 60px;
+}
+
+.sidenav a {
+    padding: 8px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 25px;
+    color: #818181;
+    display: block;
+    transition: 0.3s
+}
+
+.sidenav a:hover, .offcanvas a:focus{
+    color: #f1f1f1;
+}
+
+.sidenav .closebtn {
+    position: absolute;
+    top: 0;
+    right: 25px;
+    font-size: 36px;
+    margin-left: 50px;
+}
+
+@media screen and (max-height: 450px) {
+  .sidenav {padding-top: 15px;}
+  .sidenav a {font-size: 18px;}
+}
