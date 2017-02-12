@@ -12,21 +12,14 @@
     <script src="/TalonMotionProfileGenerator/math.js"></script>
 </head>
 <body onmousemove="mouseMove(event)">
-<div id="mySidenav" class="sidenav">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-  <a href="#">About</a>
-  <a href="#">Services</a>
-  <a href="#">Clients</a>
-  <a href="#">Contact</a>
-</div>
-<div id="main">
-	<span style="font-size:30px;cursor:pointer" onclick="openNav()">&#9776;</span>
-	<canvas id="bgCanvas" style="position:absolute;z-index:0;"></canvas>
-	<canvas id="myCanvas" style="position:absolute;z-index:1;"></canvas>
-	<button class='btn' id="reverseButton">Reverse</button>
-	<button class='btn' id="genPts">Generate Points!</button>
-	<button class='btn' id="genPts"onclick='downloadCSV({ filename: "profile.csv" });'>Download CSV!</button>
-</div>
+
+	<canvas id="bgCanvas" style="position:absolute;z-index:0;top: 75px;"></canvas>
+	<canvas id="myCanvas" style="position:absolute;z-index:1;top: 75px;"></canvas>
+	<ul class="topnav" id="myTopnav">
+		<li><a href="javascript:void(0);" style="font-size:15px;" id="reverseButton">Reverse</a></li>
+		<li><a href="javascript:void(0);" style="font-size:15px;" id="genPts">Generate Points!</a></li>
+		<li><a href="javascript:void(0);" style="font-size:15px;" id="genPts"onclick='downloadCSV({ filename: "profile.csv" });'>Download CSV!</a></li>
+	</ul>
 <script>
 var c = document.getElementById("myCanvas");
 c.onclick = canvasClicked;
@@ -184,7 +177,7 @@ function drawPolynomialParametric(constantsX, constantsY, upperLimit, reverse, c
 	context.lineWidth = 2.0
 	for (k = 0; k < upperLimit; k+= 0.01)
 	{
-//		console.log(f(k, constantsX) + ", " +  f(k, constantsY))
+
 		context.lineTo(toScreenX(f(k, constantsX)), toScreenY(f(k, constantsY)));
 	}
 	context.stroke();
@@ -333,31 +326,30 @@ function generateComponentParts(centerCons, lowerLimit, upperLimit, rAcc, rSpeed
 
 function toScreenX(inches)
 {
-    var height = window.innerHeight - 20;
+    var height = window.innerHeight;
     var width = height * 1.673;
 	return inches * width / 59.91 / 12;
 }
 
 function toScreenY(inches)
 {
-	var height = window.innerHeight - 20;
+	var height = window.innerHeight;
     var width = height * 1.673;
 	return height - inches * width / 59.91 /12;
 }
 
 function toInchesX(coord)
 {
-    var height = window.innerHeight - 20;
+    var height = window.innerHeight;
     var width = height * 1.673;
 	return coord * 59.91 * 12 / width;
 }
 
 function toInchesY(coord)
 {
-	var height = window.innerHeight - 20;
+	var height = window.innerHeight;
     var width = height * 1.673;
 	return (height - coord) * 59.91 * 12 / width;
-
 }
 
 var tempVelIndex = -1;
@@ -371,7 +363,7 @@ var currentlyReversed = false;
 function canvasClicked(e)
 {
 	var x = (e.clientX) - 7;
-	var y = (e.clientY) - 7;
+	var y = (e.clientY) - 75;
 	
 	var pt = { x: toInchesX(x), y: toInchesY(y)};
 	console.log(pt.x + ", " + pt.y);
@@ -437,49 +429,6 @@ function canvasClicked(e)
 		yConstantsTemp = getPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
 												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y},
 												{x:0 , y: acc1.y},{x: TIME_TEMP, y: acc2.y}) 
-//		xConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
-//												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x});
-//		yConstantsTemp = getCubicPolynomialConstants({x:0 , y: p1.y},{x: TIME_TEMP, y: p2.y},
-//												{x:0 , y: vel1.y},{x: TIME_TEMP, y: vel2.y});
-				
-/*		totalTime = 0;
-		totalCurveLength = 0.0;
-		STEP_SIZE = 0.01;
-		TIME_STEP = 0.25;
-		for (j = 0; j < TIME_TEMP; j+= STEP_SIZE)
-		{
-			dyParam = derivative(j, yConstantsTemp) * STEP_SIZE;
-			dxParam = derivative (j, xConstantsTemp) * STEP_SIZE;
-			totalCurveLength = totalCurveLength +  math.sqrt(dxParam * dxParam + dyParam * dyParam);
-		}
-		//console.log(totalCurveLength);
-		initialVel = math.sqrt(vel1.x * vel1.x + vel1.y * vel1.y)
-		finalVel = math.sqrt(vel2.x * vel2.x + vel2.y * vel2.y)
-		var time_part1 = (MAX_ROBOT_SPEED - initialVel) / MAX_ROBOT_ACC;//accelerating
-		var length_part1 = (MAX_ROBOT_SPEED + initialVel) / 2 * time_part1;
-		
-		var time_part3 = (MAX_ROBOT_SPEED - finalVel) / MAX_ROBOT_ACC;//deccelerating
-		var length_part3 = (MAX_ROBOT_SPEED + finalVel) / 2 * time_part3; 
-		
-		var length_part2 = totalCurveLength - length_part1 - length_part3;//constant speed
-		var time_part2 = length_part2 / MAX_ROBOT_SPEED;
-		if (length_part2 < 0)
-		{
-			alert("Error: path too short");
-			return;
-		}
-		var time_tot = time_part1 + time_part2 + time_part3;
-		var horizDilation = 10 / time_tot
-//		xConstantsFinal = getPolynomialConstants({x:0 , y: p1.x},{x: time_tot, y: p2.x},
-//												{x:0 , y: vel1.x * horizDilation},{x: time_tot, y: vel2.x * horizDilation},
-//												{x:0 , y: acc1.x * horizDilation * horizDilation},{x: time_tot, y: acc2.x * horizDilation * horizDilation});
-//		yConstantsFinal = getPolynomialConstants({x:0 , y: p1.y},{x: time_tot, y: p2.y},
-//												{x:0 , y: vel1.y * horizDilation},{x: time_tot, y: vel2.y * horizDilation},
-//												{x:0 , y: acc1.y * horizDilation * horizDilation},{x: time_tot, y: acc2.y * horizDilation * horizDilation}) 
-		
-		//console.log(length_part1 + ", " + length_part2 + ", " + length_part3)
-		//console.log(time_tot)
-		constants.push([xConstantsTemp, yConstantsTemp, [time_part1, length_part1], [time_part2, length_part2], [time_part3, length_part3], currentlyReversed]);*/
 		constants.push([xConstantsTemp, yConstantsTemp, currentlyReversed]);
         drawPolynomialParametric(xConstantsTemp, yConstantsTemp, TIME_TEMP, currentlyReversed, ctx2)
 		tempVelIndex = -1;
@@ -491,7 +440,7 @@ function mouseMove(e) {
     if (mode == 2)
 	{
         dx = toInchesX(e.clientX - 7) - pts[pts.length - 1].x
-        dy = toInchesY(e.clientY - 7) - pts[pts.length - 1].y
+        dy = toInchesY(e.clientY - 75) - pts[pts.length - 1].y
         angle = Math.atan2(dy, dx);
 		//console.log(angle);
 		radius = MAX_ROBOT_SPEED;
@@ -528,9 +477,6 @@ function mouseMove(e) {
 		acc1 = {x: MAX_ROBOT_ACC * Math.cos(accAngle), y: MAX_ROBOT_ACC * Math.sin(accAngle)};
 		acc2 = {x: 0, y: 0};
 		TIME_TEMP = 10;
-//		console.log(p1.x + ", " + p1.y)
-//		console.log(p2.x + ", " + p2.y)
-//		alert(vel2.x + ", " + vel2.y)
 		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
 												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x},
 												{x:0 , y: acc1.x},{x: TIME_TEMP, y: acc2.x});
@@ -554,7 +500,7 @@ function mouseMove(e) {
 		}
 		draw();
 		p1 = pts[pts.length - 1];
-		p2 = {x: toInchesX(e.clientX - 7), y: toInchesY(e.clientY - 7)}
+		p2 = {x: toInchesX(e.clientX - 7), y: toInchesY(e.clientY - 75)}
 		deltaX = p2.x - p1.x;
 		deltaY = p2.y - p1.y;
 		accAngle = Math.atan2(deltaY, deltaX);
@@ -572,7 +518,7 @@ function mouseMove(e) {
 }
 
 function setupCanvas() {
-    height = window.innerHeight - 20;
+    height = window.innerHeight - 100;
     width = height * 1.673;
     ctx.canvas.width = width;
     ctx.canvas.height = height;
@@ -627,7 +573,7 @@ function drawWayPts() {
 
 function draw() {
     ctx.clearRect(0, 0, c.width, c.height);
-    if ((window.innerHeight - 20) != height) {
+    if ((window.innerHeight - 100) != height) {
         //Browser has been resized
         setupCanvas();
     }
@@ -661,7 +607,7 @@ function genPts()
 	act_robot_acc = 20;
 	currentVel = 0;
 	
-	var TIME_STEP = 0.1;
+	var TIME_STEP = 0.02;
 	var LEN_STEP = 0.00005;
 	var curveLimit = 0;
 	
@@ -684,8 +630,6 @@ function genPts()
 			}
 			limitToStartDeccelerate = curveLimit;
 		}
-//	console.log("limit: " + limitToStartDeccelerate);
-//	console.log("poly: " + constantsToStartDeccelerate)
 	}
 	else
 	{
@@ -694,7 +638,7 @@ function genPts()
 	var distToTravel = 0;
 	for (ii = 0; ii < constantsToStartDeccelerate; ii++)
 	{
-//xParam at 0, yParam at 1, time part1 at 2, time part2 at 3, time part3 = at 4, reversed at 5
+		//xParam at 0, yParam at 1, time part1 at 2, time part2 at 3, time part3 = at 4, reversed at 5
 		curveLimit = 0;
 		while (curveLimit <= 10)
 		{
@@ -865,12 +809,8 @@ function genPts()
 		speedUpper = Math.sqrt(deltaXUpper * deltaXUpper + deltaYUpper * deltaYUpper) / TIME_STEP;
 		deltaXLower = lowerPts[ll + 1][0] - lowerPts[ll][0];
 		deltaYLower = lowerPts[ll + 1][1] - lowerPts[ll][1];
-//		console.log("DX1: " + deltaXUpper)
-//		console.log("DX2: " + deltaXLower)
-//		console.log("DY1: " + deltaYUpper)
-//		console.log("DY2: " + deltaYLower)
 		speedLower = Math.sqrt(deltaXLower * deltaXLower + deltaYLower * deltaYLower) / TIME_STEP;
-		speedPts.push([speedUpper, speedLower, TIME_STEP])
+		speedPts.push([speedUpper, speedLower, ll * TIME_STEP, TIME_STEP])
 	}
 }
 
@@ -924,18 +864,6 @@ window.downloadCSV = function (args) {
     link.setAttribute('href', data);
     link.setAttribute('download', filename);
     link.click();
-}
-
-/* Set the width of the side navigation to 250px */
-function openNav() {
-    document.getElementById("mySidenav").style.width = "250px";
-    document.getElementById("main").style.marginLeft = "250px";
-}
-
-/* Set the width of the side navigation to 0 */
-function closeNav() {
-    document.getElementById("mySidenav").style.width = "0";
-    document.getElementById("main").style.marginLeft= "0";
 }
 
 setupCanvas();
