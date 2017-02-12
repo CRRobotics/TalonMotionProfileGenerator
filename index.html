@@ -420,9 +420,7 @@ function canvasClicked(e)
 		acc1 = {x: MAX_ROBOT_ACC * Math.cos(accAngle), y: MAX_ROBOT_ACC * Math.sin(accAngle)};
 		acc2 = {x: 0, y: 0};
 		TIME_TEMP = 10;
-//		console.log(p1.x + ", " + p1.y)
-//		console.log(p2.x + ", " + p2.y)
-//		alert(vel2.x + ", " + vel2.y)
+
 		xConstantsTemp = getPolynomialConstants({x:0 , y: p1.x},{x: TIME_TEMP, y: p2.x},
 												{x:0 , y: vel1.x},{x: TIME_TEMP, y: vel2.x},
 												{x:0 , y: acc1.x},{x: TIME_TEMP, y: acc2.x});
@@ -608,7 +606,7 @@ function genPts()
 	currentVel = 0;
 	
 	var TIME_STEP = 0.02;
-	var LEN_STEP = 0.00005;
+	var LEN_STEP = 0.000005;
 	var curveLimit = 0;
 	
 	timeToDeccelerate = act_robot_speed / act_robot_acc
