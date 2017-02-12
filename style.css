@@ -14,8 +14,10 @@
   background: darkgray;
 }
 body {
-    background-color: rgba(0, 0, 0, 0.82);
+    background-color: rgba(0, 0, 0, 0.75);
+    font-family: "Lato", sans-serif;
 }
+
 .sidenav {
     height: 100%;
     width: 0;
@@ -48,6 +50,11 @@ body {
     right: 25px;
     font-size: 36px;
     margin-left: 50px;
+}
+
+#main {
+    transition: margin-left .5s;
+    padding: 16px;
 }
 
 @media screen and (max-height: 450px) {
