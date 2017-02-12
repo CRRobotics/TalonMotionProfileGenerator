@@ -121,10 +121,10 @@ function acceleration(x, coefficients)
 	return sum;
 }
 
-function getUpperAndLowerPathPts(xOrig, yOrig, m, spacing)
+function getUpperAndLowerPathPts(xOrig, yOrig, dAngle, spacing)
 {
 	var pts = [];
-	if (Math.abs(m) < 0.0001)
+	/*if (Math.abs(m) < 0.0001)
 	{
 		pts.push([xOrig, yOrig + spacing]);
 		pts.push([xOrig, yOrig - spacing]);
@@ -145,7 +145,10 @@ function getUpperAndLowerPathPts(xOrig, yOrig, m, spacing)
 			pts.push([xOrig - dx, yOrig - dy]);
 		}
 	}
-	return pts;
+	return pts;*/
+    pts.push([xOrig + spacing * Math.cos(dAngle + 1.57079632679), yOrig + spacing * Math.sin(dAngle + 1.57079632679)]);
+    pts.push([xOrig + spacing * Math.cos(dAngle - 1.57079632679), yOrig + spacing * Math.sin(dAngle - 1.57079632679)]);
+    return pts;
 }
 
 function drawPolynomial(constants, upperLimit, ctx)
@@ -657,7 +660,7 @@ function genPts()
 				console.log("DISTtoTRAVEL: " + distToTravel)
 				if (distToTravel <= 0)
 				{
-					dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
+					dydx = Math.atan2(derivative(curveLimit, constants[ii][1]), derivative(curveLimit, constants[ii][0]));
 					pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
 					if (upperPts.length >= 1)
 					{
@@ -686,7 +689,7 @@ function genPts()
 				console.log("DISTTOTRAVEL: " + distToTravel)
 				if (distToTravel <= 0)
 				{
-					dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
+					dydx = Math.atan2(derivative(curveLimit, constants[ii][1]), derivative(curveLimit, constants[ii][0]));
 					pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
 					
 					var velUpper = Math.sqrt(Math.pow(pathPts[0][0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[0][1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP
@@ -723,7 +726,7 @@ function genPts()
 					}
 					if (distToTravel <= 0)
 					{
-						dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
+						dydx = Math.atan2(derivative(curveLimit, constants[ii][1]), derivative(curveLimit, constants[ii][0]));
 						pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
 						
 						if (upperPts.length >= 1)
@@ -753,7 +756,7 @@ function genPts()
 					}
 					if (distToTravel <= 0)
 					{
-						dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
+						dydx = Math.atan2(derivative(curveLimit, constants[ii][1]), derivative(curveLimit, constants[ii][0]));
 						pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
 						if (upperPts.length >= 1)
 						{
@@ -785,8 +788,8 @@ function genPts()
 				}
 				if (distToTravel <= 0)
 				{
-					dydx = derivative(curveLimit, constants[ii][1]) / derivative(curveLimit, constants[ii][0]);
-					pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
+					dydx = Math.atan2(derivative(curveLimit, constants[ii][0]), derivative(curveLimit, constants[ii][1]));
+                    pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
 					
 					var velUpper = Math.sqrt(Math.pow(pathPts[0][0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[0][1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP
 					var velLower = Math.sqrt(Math.pow(pathPts[1][0] - lowerPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[1][1] - lowerPts[upperPts.length - 1][1], 2)) / TIME_STEP
