@@ -16,9 +16,11 @@
 	<canvas id="bgCanvas" style="position:absolute;z-index:0;top: 75px;"></canvas>
 	<canvas id="myCanvas" style="position:absolute;z-index:1;top: 75px;"></canvas>
 	<ul class="topnav" id="myTopnav">
+		<li><img src="https://crrobotics.github.io/TalonMotionProfileGenerator/favicon-32x32.png" alt="Logo" width="42" height="42" hspace="15"></li>
+		<li><a href="javascript:void(0);" style="font-size:15px;" id="promptPt" onclick='promptPt();'>Exact Point</a></li>
 		<li><a href="javascript:void(0);" style="font-size:15px;" id="reverseButton">Reverse</a></li>
 		<li><a href="javascript:void(0);" style="font-size:15px;" id="genPts">Generate Points!</a></li>
-		<li><a href="javascript:void(0);" style="font-size:15px;" id="genPts"onclick='downloadCSV({ filename: "profile.csv" });'>Download CSV!</a></li>
+		<li><a href="javascript:void(0);" style="font-size:15px;" id="genPts" onclick='downloadCSV({ filename: "profile.csv" });'>Download CSV!</a></li>
 	</ul>
 <script>
 var c = document.getElementById("myCanvas");
