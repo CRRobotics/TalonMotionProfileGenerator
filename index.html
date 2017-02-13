@@ -389,7 +389,7 @@ function canvasClicked(e)
         dx = toInchesX(x) - pts[pts.length - 1].x
         dy = toInchesY(y) - pts[pts.length - 1].y
 		angle = Math.atan2(dy, dx);
-		radius = MAX_ROBOT_SPEED;
+		radius = Math.sqrt(dx * dx + dy * dy)
 		if (vel.length >= 1)
 			vel[vel.length - 1] = {r:radius, theta:angle};
         else
@@ -398,14 +398,14 @@ function canvasClicked(e)
 		}
 		//Time to make polynomials!
         var vel1;
-        var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
+        var vel2 = {x: vel[vel.length - 1].r * Math.cos(vel[vel.length - 1].theta), y: vel[vel.length - 1].r * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
 		{
         	vel1 = {x: 8.0, y: 0}
 		}
         else
 		{
-            vel1 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 2].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 2].theta)};
+            vel1 = {x: vel[vel.length - 2].r * Math.cos(vel[vel.length - 2].theta), y: vel[vel.length - 2].r * Math.sin(vel[vel.length - 2].theta)};
 		}
 		p1 = pts[pts.length - 2];
 		p2 = pts[pts.length - 1];
@@ -441,13 +441,13 @@ function canvasClicked(e)
 
 function mouseMove(e) {
     if (mode == 2)
-	{
+{
         dx = toInchesX(e.clientX - 7) - pts[pts.length - 1].x
         dy = toInchesY(e.clientY - 75) - pts[pts.length - 1].y
         angle = Math.atan2(dy, dx);
 		//console.log(angle);
-		radius = MAX_ROBOT_SPEED;
-		if (tempVelIndex <= -1) {
+	radius = Math.sqrt(dx * dx + dy * dy);
+	if (tempVelIndex <= -1) {
             vel.push({r:radius, theta:angle});
             tempVelIndex = 0;
         }
@@ -455,14 +455,14 @@ function mouseMove(e) {
             vel[vel.length-1] = {r:radius, theta:angle};
 		//Time to make polynomials!
         var vel1;
-        var vel2 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 1].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 1].theta)};
+        var vel2 = {x: vel[vel.length - 1].r * Math.cos(vel[vel.length - 1].theta), y: vel[vel.length - 1].r * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
 		{
         	vel1 = {x: 8.0, y: 0}
 		}
         else
 		{
-            vel1 = {x: MAX_ROBOT_SPEED * Math.cos(vel[vel.length - 2].theta), y: MAX_ROBOT_SPEED * Math.sin(vel[vel.length - 2].theta)};
+            vel1 = {x: vel[vel.length - 2].r * Math.cos(vel[vel.length - 2].theta), y: vel[vel.length - 2].r * Math.sin(vel[vel.length - 2].theta)};
 		}
 		draw();
 		p1 = pts[pts.length - 2];
