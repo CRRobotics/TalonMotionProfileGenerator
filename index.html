@@ -846,6 +846,20 @@ function convertArrayOfObjectsToCSV(args) {
     return result;
 }
 
+function promptPt()
+{
+    var xCoord = parseFloat(prompt("xCoordinate in inches", "0"))
+    var yCoord = parseFloat(prompt("yCoordinate in inches", "0"))
+    canvasClicked({clientX: toScreenX(xCoord), clientY: toScreenY(yCoord)});
+    if (pts.length != 1)//not first point
+    {
+        var velMag = parseFloat(prompt("magnitude of your velocity vector", "0"))
+        var velDir = parseFloat(prompt("angle of your velocity vector (from 0 degrees in standard position)", "0"))
+        vel.push({radius: velMag, theta: velDir});
+        canvasClicked({clientX: toScreenX(xCoord + velMag * Math.cos(velDir)), clientY: toScreenY(yCoord + velMag * Math.sin(velDir))})
+    }
+}
+
 window.downloadCSV = function (args) {
     var data, filename, link;
 
