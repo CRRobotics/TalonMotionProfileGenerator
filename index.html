@@ -16,11 +16,9 @@
 	<canvas id="bgCanvas" style="position:absolute;z-index:0;top: 75px;"></canvas>
 	<canvas id="myCanvas" style="position:absolute;z-index:1;top: 75px;"></canvas>
 	<ul class="topnav" id="myTopnav">
-		<li><img src="https://crrobotics.github.io/TalonMotionProfileGenerator/favicon-32x32.png" alt="Logo" width="42" height="42" hspace="15"></li>
-		<li><a href="javascript:void(0);" style="font-size:15px;" id="promptPt" onclick='promptPt();'>Exact Point</a></li>
 		<li><a href="javascript:void(0);" style="font-size:15px;" id="reverseButton">Reverse</a></li>
 		<li><a href="javascript:void(0);" style="font-size:15px;" id="genPts">Generate Points!</a></li>
-		<li><a href="javascript:void(0);" style="font-size:15px;" id="genPts" onclick='downloadCSV({ filename: "profile.csv" });'>Download CSV!</a></li>
+		<li><a href="javascript:void(0);" style="font-size:15px;" id="genPts"onclick='downloadCSV({ filename: "profile.csv" });'>Download CSV!</a></li>
 	</ul>
 <script>
 var c = document.getElementById("myCanvas");
@@ -389,7 +387,8 @@ function canvasClicked(e)
         dx = toInchesX(x) - pts[pts.length - 1].x
         dy = toInchesY(y) - pts[pts.length - 1].y
 		angle = Math.atan2(dy, dx);
-		radius = Math.sqrt(dx * dx + dy * dy)
+		radius = Math.sqrt(dx * dx + dy * dy);
+        console.log("R" + radius)
 		if (vel.length >= 1)
 			vel[vel.length - 1] = {r:radius, theta:angle};
         else
@@ -421,7 +420,7 @@ function canvasClicked(e)
 			else
 				accAngle -= 30;
 		}
-		console.log((vel[vel.length -1].theta - Math.atan2(vel1.y, vel1.x)) * 180 / 3.1415);
+        console.log("VEL1" + vel[vel.length - 1].theta)//console.log((vel[vel.length - 1].theta - Math.atan2(vel1.y, vel1.x)) * 180 / 3.1415);
 		acc1 = {x: MAX_ROBOT_ACC * Math.cos(accAngle), y: MAX_ROBOT_ACC * Math.sin(accAngle)};
 		acc2 = {x: 0, y: 0};
 		TIME_TEMP = 10;
@@ -441,13 +440,13 @@ function canvasClicked(e)
 
 function mouseMove(e) {
     if (mode == 2)
-{
+	{
         dx = toInchesX(e.clientX - 7) - pts[pts.length - 1].x
         dy = toInchesY(e.clientY - 75) - pts[pts.length - 1].y
         angle = Math.atan2(dy, dx);
 		//console.log(angle);
-	radius = Math.sqrt(dx * dx + dy * dy);
-	if (tempVelIndex <= -1) {
+		radius = Math.sqrt(dx * dx + dy * dy);
+		if (tempVelIndex <= -1) {
             vel.push({r:radius, theta:angle});
             tempVelIndex = 0;
         }
@@ -457,13 +456,13 @@ function mouseMove(e) {
         var vel1;
         var vel2 = {x: vel[vel.length - 1].r * Math.cos(vel[vel.length - 1].theta), y: vel[vel.length - 1].r * Math.sin(vel[vel.length - 1].theta)};
         if (vel.length == 1)
-		{
-        	vel1 = {x: 8.0, y: 0}
-		}
+        {
+            vel1 = {x: 8.0, y: 0}
+        }
         else
-		{
+        {
             vel1 = {x: vel[vel.length - 2].r * Math.cos(vel[vel.length - 2].theta), y: vel[vel.length - 2].r * Math.sin(vel[vel.length - 2].theta)};
-		}
+        }
 		draw();
 		p1 = pts[pts.length - 2];
 		p2 = pts[pts.length - 1];
@@ -555,7 +554,7 @@ function drawWayPts() {
         	y = pts[j + 1].y;
     	radius = vel[j].r;
     	angle = vel[j].theta;
-    	VEL_LEN = 20;
+    	VEL_LEN = radius;
     	if (dx == 0)
     	{
         	ctx.moveTo(toScreenX(x), toScreenY(y - VEL_LEN * Math.sin(angle)));
