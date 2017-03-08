@@ -612,16 +612,15 @@ function reversePath(){
 var speedPts = [];//speed top, speed bottom, time 
 var upperPts = [];//x, y
 var lowerPts = [];//x, y
+
 function genPts()
 {
-	
-
 	act_robot_speed = 120;//Max speed for 1 side
 	act_robot_acc = 180;//Max acc for 1 side
 	currentVelU = 0;
     currentVelL = 0;
 	var TIME_STEP = 0.02;
-	var LEN_STEP = 0.000005;
+	var LEN_STEP = 0.0000025;
 	var curveLimit = 0;
 	
 	timeToDeccelerate = act_robot_speed / act_robot_acc
@@ -691,14 +690,24 @@ function genPts()
                     dir = -1;
                 var upperSpeedPt = upperDist / TIME_STEP * 2 - currentVelU;
                 var lowerSpeedPt = lowerDist / TIME_STEP * 2 - currentVelL;
-                currentVelU = upperSpeedPt;
+                if (upperSpeedPt > act_robot_speed)
+				{
+					lowerSpeedPt = lowerSpeedPt * act_robot_speed / upperSpeedPt;
+					upperSpeedPt = act_robot_speed;
+				}
+				else if (lowerSpeedPt > act_robot_speed)
+				{
+					upperSpeedPt = upperSpeedPt * act_robot_speed / lowerSpeedPt;
+					lowerSpeed = act_robot_speed;
+				}
+				currentVelU = upperSpeedPt;
                 currentVelL = lowerSpeedPt;
                 upperSpeedPt = upperSpeedPt * dir;
                 lowerSpeedPt = lowerSpeedPt * dir;
                 
                 //This will introduce some minor error, but it should be negligible
-                curDistUpper = Math.max(curDistUpper - maxDistUpper, 0);
-                curDistLower = Math.max(curDistLower - maxDistLower, 0);
+                curDistUpper = 0;//Math.max(curDistUpper - maxDistUpper, 0);
+                curDistLower = 0;//Math.max(curDistLower - maxDistLower, 0);
                 speedPts.push([upperSpeedPt, lowerSpeedPt, TIME_STEP]);
                 maxVelUpper = Math.min(act_robot_speed, currentVelU + act_robot_acc * TIME_STEP);
                 maxDistUpper = (currentVelU + maxVelUpper) / 2 * TIME_STEP;
@@ -708,6 +717,7 @@ function genPts()
         }
         
     }
+	console.log("TOTAL TIME: " + (speedPts.length * 0.02) + "s")
 }
 
 
