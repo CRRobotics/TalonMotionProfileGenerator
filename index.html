@@ -782,50 +782,104 @@ function genPts()
 						drawBlip(pathPts[0][0], pathPts[0][1], "#ff99ff", ctx2)
 						drawBlip(pathPts[1][0], pathPts[1][1], "#ff99ff", ctx2)
 					}
-				}
-			}
-			else
+function genPts()
+{
+	
+
+	act_robot_speed = 20;//Max speed for 1 side
+	act_robot_acc = 40;//Max acc for 1 side
+	currentVelU = 0;
+    currentVelL = 0;
+	var TIME_STEP = 0.02;
+	var LEN_STEP = 0.000005;
+	var curveLimit = 0;
+	
+	timeToDeccelerate = act_robot_speed / act_robot_acc
+	lenToDeccelerate = (act_robot_speed + 0) / 2 * timeToDeccelerate
+	var limitToStartDeccelerate;
+	var constantsToStartDeccelerate;
+	if (false)//(constants.length > 1)
+	{
+		for (ii = constants.length - 1; ii >= 0 && lenToDeccelerate >= 0; ii--)
+		{
+			constantsToStartDeccelerate = ii;
+			curveLimit = 10;
+			while (curveLimit >= 0 && lenToDeccelerate >= 0)
 			{
-				if (distToTravel <= 0)
-						distToTravel = (currentVel + Math.max(currentVel - act_robot_acc * TIME_STEP, 0)) / 2 * TIME_STEP;
-				currentVel = Math.max(currentVel - act_robot_acc * TIME_STEP, 0)
-				if (currentVel <= 0)
-					curveLimit = 11;
-				while (distToTravel > 0 && curveLimit <= 10)
-				{
-					dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
-					dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
-					distToTravel -=  math.sqrt(dxParam * dxParam + dyParam * dyParam);
-					curveLimit += LEN_STEP;
-				}
-				if (distToTravel <= 0)
-				{
-					dydx = Math.atan2(derivative(curveLimit, constants[ii][0]), derivative(curveLimit, constants[ii][1]));
-                    pathPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]),f(curveLimit, constants[ii][1]), dydx, 16)
-					
-					var velUpper = Math.sqrt(Math.pow(pathPts[0][0] - upperPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[0][1] - upperPts[upperPts.length - 1][1], 2)) / TIME_STEP
-					var velLower = Math.sqrt(Math.pow(pathPts[1][0] - lowerPts[upperPts.length - 1][0], 2) + Math.pow(pathPts[1][1] - lowerPts[upperPts.length - 1][1], 2)) / TIME_STEP
-					//speedPts.push([velUpper, velLower, TIME_STEP]);
-					upperPts.push(pathPts[0]);
-					lowerPts.push(pathPts[1]);
-					drawBlip(pathPts[0][0], pathPts[0][1], "#ff99ff", ctx2)
-					drawBlip(pathPts[1][0], pathPts[1][1], "#ff99ff", ctx2)
-				}
+				dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
+				dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
+				lenToDeccelerate -=  math.sqrt(dxParam * dxParam + dyParam * dyParam)
+				curveLimit -= LEN_STEP;
 			}
+			limitToStartDeccelerate = curveLimit;
 		}
 	}
-	
-	for (ll = 0; ll < upperPts.length - 1; ll++)
+	else
 	{
-		deltaXUpper = upperPts[ll + 1][0] - upperPts[ll][0];
-		deltaYUpper = upperPts[ll + 1][1] - upperPts[ll][1];
-		speedUpper = Math.sqrt(deltaXUpper * deltaXUpper + deltaYUpper * deltaYUpper) / TIME_STEP;
-		deltaXLower = lowerPts[ll + 1][0] - lowerPts[ll][0];
-		deltaYLower = lowerPts[ll + 1][1] - lowerPts[ll][1];
-		speedLower = Math.sqrt(deltaXLower * deltaXLower + deltaYLower * deltaYLower) / TIME_STEP;
-		speedPts.push([speedUpper, speedLower, ll * TIME_STEP, TIME_STEP])
+		constantsToStartDeccelerate = constants.length;
 	}
+    
+	var distToTravel = 0;
+
+    for (ii = 0; ii < constantsToStartDeccelerate; ii++)//accelerating
+    {
+        var curveLimit = 0;
+        maxVelUpper = Math.min(act_robot_speed, currentVelU + act_robot_acc * TIME_STEP);
+        maxDistUpper = (currentVelU + maxVelUpper) / 2 * TIME_STEP;
+        maxVelLower = Math.min(act_robot_speed, currentVelL + act_robot_acc * TIME_STEP);
+        maxDistLower = (currentVelL + maxVelLower) / 2 * TIME_STEP;
+        curDistUpper = 0;
+        curDistLower = 0;
+        var initialPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]), f(curveLimit, constants[ii][1]), vel[0].theta, 16)
+        var xPosUpper2 = initialPts[0][0];
+        var yPosUpper2 = initialPts[0][1];
+        var xPosLower2 = initialPts[1][0];
+        var yPosLower2 = initialPts[1][1];
+        while (curveLimit <= 10)
+        {
+            curveLimit += LEN_STEP;
+            var derivAngle = Math.atan2(derivative(curveLimit, constants[ii][1]), derivative(curveLimit, constants[ii][0]));
+            var currentPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]), f(curveLimit, constants[ii][1]), derivAngle, 16);
+            var xPosUpper1 = currentPts[0][0];
+            var yPosUpper1 = currentPts[0][1];
+            var xPosLower1 = currentPts[1][0];
+            var yPosLower1 = currentPts[1][1];
+            var upperDistTraveled = Math.sqrt((xPosUpper1 - xPosUpper2) * (xPosUpper1 - xPosUpper2) + (yPosUpper1 - yPosUpper2) * (yPosUpper1 - yPosUpper2));
+            var lowerDistTraveled = Math.sqrt((xPosLower1 - xPosLower2) * (xPosLower1 - xPosLower2) + (yPosLower1 - yPosLower2) * (yPosLower1 - yPosLower2));
+            curDistUpper += upperDistTraveled;
+            curDistLower += lowerDistTraveled;
+            xPosUpper2 = xPosUpper1;
+            yPosUpper2 = yPosUpper1;
+            xPosLower2 = xPosLower1;
+            yPosLower2 = yPosLower1;
+            if (curDistUpper > maxDistUpper || curDistLower > maxDistLower)
+            {
+                var upperDist = Math.min(curDistUpper, maxDistUpper);
+                var lowerDist = math.min(curDistLower, maxDistLower);
+                var dir = 1;
+                if (constants[ii][2])
+                    dir = -1;
+                var upperSpeedPt = upperDist / TIME_STEP * 2 - currentVelU;
+                var lowerSpeedPt = upperDist / TIME_STEP * 2 - currentVelL;
+                currentVelU = upperSpeedPt;
+                currentVelL = lowerSpeedPt;
+                upperSpeedPt = upperSpeedPt * dir;
+                lowerSpeedPt = lowerSpeedPt * dir;
+                
+                //This will introduce some minor error, but it should be negligible
+                curDistUpper = Math.max(curDistUpper - maxDistUpper, 0);
+                curDistLower = Math.max(curDistLower - maxDistLower, 0);
+                speedPts.push([upperSpeedPt, lowerSpeedPt, TIME_STEP]);
+                maxVelUpper = Math.min(act_robot_speed, currentVelU + act_robot_acc * TIME_STEP);
+                maxDistUpper = (currentVelU + maxVelUpper) / 2 * TIME_STEP;
+                maxVelLower = Math.min(act_robot_speed, currentVelL + act_robot_acc * TIME_STEP);
+                maxDistLower = (currentVelL + maxVelLower) / 2 * TIME_STEP;
+            }
+        }
+        
+    }
 }
+
 
 function convertArrayOfObjectsToCSV(args) {
     var result, ctr, keys, columnDelimiter, lineDelimiter, data;
