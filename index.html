@@ -620,8 +620,8 @@ function genPts()
 	act_robot_acc = 180;//Max acc for 1 side
 	currentVelU = 0;
     currentVelL = 0;
-	var TIME_STEP = 0.02;
-	var LEN_STEP = 0.0000003125 * 4;
+	var TIME_STEP = 0.1;
+	var LEN_STEP = 0.0000003125 * 1;
 	var curveLimit = 0;
 	
 	timeToDeccelerate = act_robot_speed / act_robot_acc
@@ -649,7 +649,7 @@ function genPts()
 		constantsToStartDeccelerate = constants.length;
 	}
     
-	
+	var maxDistTravelled = 0;
     for (ii = 0; ii < constantsToStartDeccelerate; ii++)//accelerating
     {
         var curveLimit = 0;
@@ -665,7 +665,7 @@ function genPts()
         var yPosUpper2 = initialPts[0][1];
         var xPosLower2 = initialPts[1][0];
         var yPosLower2 = initialPts[1][1];
-		console.log("MAX DIST: " )
+		//console.log("MAX DIST: " )
         while (curveLimit <= 10)
         {
             curveLimit += LEN_STEP;
@@ -677,13 +677,25 @@ function genPts()
             var yPosLower1 = currentPts[1][1];
             var upperDistTraveled = Math.sqrt((xPosUpper1 - xPosUpper2) * (xPosUpper1 - xPosUpper2) + (yPosUpper1 - yPosUpper2) * (yPosUpper1 - yPosUpper2));
             var lowerDistTraveled = Math.sqrt((xPosLower1 - xPosLower2) * (xPosLower1 - xPosLower2) + (yPosLower1 - yPosLower2) * (yPosLower1 - yPosLower2));
-            curDistUpper += upperDistTraveled;
+            if (upperDistTraveled > maxDistTravelled)
+				maxDistTravelled = upperDistTraveled;
+			if (lowerDistTraveled > maxDistTravelled)
+				maxDistTravelled = lowerDistTraveled;
+			curDistUpper += upperDistTraveled;
             curDistLower += lowerDistTraveled;
             xPosUpper2 = xPosUpper1;
             yPosUpper2 = yPosUpper1;
             xPosLower2 = xPosLower1;
             yPosLower2 = yPosLower1;
-            if (curDistUpper > maxDistUpper || curDistLower > maxDistLower)
+			console.log(curDistUpper + ", " + curDistLower)
+			if (curDistUpper  - maxDistUpper > 0.2 || curDistLower - maxDistLower > 0.2)
+			{
+				console.log(maxDistUpper + ", " + maxDistLower)
+				alert("failed");
+				console.log("MAX DIST" + maxDistTravelled);
+				return;
+			}
+            if (Math.abs(curDistUpper - maxDistUpper) < 0.00001 || Math.abs(curDistLower - maxDistLower) < 0.00001)
             {
                 var upperDist = Math.min(curDistUpper, maxDistUpper);
                 var lowerDist = math.min(curDistLower, maxDistLower);
@@ -702,10 +714,10 @@ function genPts()
 				
 				//console.log("U: " + (maxDistUpper) + " L: " + (maxDistLower));
                 //This will introduce some minor error, but it should be negligible
-                curDistUpper = Math.max(curDistUpper - maxDistUpper, 0);
-                curDistLower = Math.max(curDistLower - maxDistLower, 0);
+                curDistUpper = 0;//Math.max(curDistUpper - maxDistUpper, 0);
+                curDistLower = 0;//Math.max(curDistLower - maxDistLower, 0);
 				
-				//console.log("U: " + curDistUpper + " L: " + curDistLower);
+				console.log("U: " + curDistUpper + " L: " + curDistLower);
                 if (dir == -1)
 					speedPts.push([lowerSpeedPt, upperSpeedPt, TIME_STEP]);
 				else
@@ -718,6 +730,7 @@ function genPts()
         }
         
     }
+	console.log("MAX DIST" + maxDistTravelled);
 	console.log("TIME " + speedPts.length * speedPts[0][2]);
 }
 
