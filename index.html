@@ -369,7 +369,7 @@ function toInchesY(coord)
 var tempVelIndex = -1;
 var MAX_ROBOT_SPEED = 8.0;
 var MAX_ROBOT_ACC = 0.0;
-var mode = 0;
+var mode = -1;
 var pts = [];
 var vel = [];
 var constants = [];//xParam at 0, yParam at 1, time part1 at 2, time part2 at 3, time part3 = at 4, reversed at 5
@@ -381,10 +381,25 @@ function canvasClicked(e)
 	
 	var pt = { x: toInchesX(x), y: toInchesY(y)};
 	console.log(pt.x + ", " + pt.y);
-	if (mode == 0)
+	if (mode == -1)
+	{
+		mode = 0;
+		pts.push(pt);
+	}
+	else if (mode == 0)
 	{
 		mode = 1;
-		pts.push(pt);
+		dx = toInchesX(x) - pts[pts.length - 1].x
+        dy = toInchesY(y) - pts[pts.length - 1].y
+		angle = Math.atan2(dy, dx);
+		radius = Math.sqrt(dx * dx + dy * dy);
+		if (vel.length >= 1)
+			vel[vel.length - 1] = {r:radius, theta:angle};
+        else
+		{
+			vel.push({r:radius, theta:angle});
+		}
+		tempVelIndex = -1;
 	}
 	else if (mode == 1)
 	{
@@ -399,7 +414,7 @@ function canvasClicked(e)
         dy = toInchesY(y) - pts[pts.length - 1].y
 		angle = Math.atan2(dy, dx);
 		radius = Math.sqrt(dx * dx + dy * dy);
-        console.log("R" + radius)
+        //console.log("R" + radius)
 		if (vel.length >= 1)
 			vel[vel.length - 1] = {r:radius, theta:angle};
         else
@@ -409,14 +424,14 @@ function canvasClicked(e)
 		//Time to make polynomials!
         var vel1;
         var vel2 = {x: vel[vel.length - 1].r * Math.cos(vel[vel.length - 1].theta), y: vel[vel.length - 1].r * Math.sin(vel[vel.length - 1].theta)};
-        if (vel.length == 1)
-		{
-        	vel1 = {x: 8.0, y: 0}
-		}
-        else
-		{
+        //if (vel.length == 1)
+		//{
+        //	vel1 = {x: 8.0, y: 0}
+		//}
+        //else
+		//{
             vel1 = {x: vel[vel.length - 2].r * Math.cos(vel[vel.length - 2].theta), y: vel[vel.length - 2].r * Math.sin(vel[vel.length - 2].theta)};
-		}
+		//}
 		p1 = pts[pts.length - 2];
 		p2 = pts[pts.length - 1];
 		deltaX = p2.x - p1.x;
@@ -431,7 +446,7 @@ function canvasClicked(e)
 			else
 				accAngle -= 30;
 		}
-        console.log("VEL1" + vel[vel.length - 1].theta)//console.log((vel[vel.length - 1].theta - Math.atan2(vel1.y, vel1.x)) * 180 / 3.1415);
+        //console.log("VEL1" + vel[vel.length - 1].theta)//console.log((vel[vel.length - 1].theta - Math.atan2(vel1.y, vel1.x)) * 180 / 3.1415);
 		acc1 = {x: MAX_ROBOT_ACC * Math.cos(accAngle), y: MAX_ROBOT_ACC * Math.sin(accAngle)};
 		acc2 = {x: 0, y: 0};
 		TIME_TEMP = 10;
@@ -450,7 +465,20 @@ function canvasClicked(e)
 }
 
 function mouseMove(e) {
-    if (mode == 2)
+	if (mode == 0){
+		dx = toInchesX(e.clientX - 7) - pts[0].x
+        dy = toInchesY(e.clientY - 75) - pts[0].y
+        angle = Math.atan2(dy, dx);
+		radius = Math.sqrt(dx * dx + dy * dy);
+		if (tempVelIndex <= -1) {
+            vel.push({r:radius, theta:angle});
+            tempVelIndex = 0;
+        }
+        else
+            vel[vel.length-1] = {r:radius, theta:angle};
+		draw();
+	}
+    else if (mode == 2)
 	{
         dx = toInchesX(e.clientX - 7) - pts[pts.length - 1].x
         dy = toInchesY(e.clientY - 75) - pts[pts.length - 1].y
@@ -561,8 +589,8 @@ function drawWayPts() {
     for (var j = 0; j < vel.length; j++)
     {
     	ctx.lineWidth = 0.5;
-    		x = pts[j + 1].x;
-        	y = pts[j + 1].y;
+    	x = pts[j].x;
+        y = pts[j].y;
     	radius = vel[j].r;
     	angle = vel[j].theta;
     	VEL_LEN = radius;
@@ -603,7 +631,7 @@ function loop() {
 function reversePath(){
 	if (mode == 1)
 	{
-		alert("reversed path")
+		//alert("reversed path")
 		currentlyReversed = !currentlyReversed;
 		vel[vel.length - 1].theta =  3.1415 + vel[vel.length - 1].theta; 
 	}
@@ -616,59 +644,33 @@ function genPts()
 {
 	
 
-	act_robot_speed = 120;//Max speed for 1 side
+	act_robot_speed = 100;//Max speed for 1 side
 	act_robot_acc = 180;//Max acc for 1 side
 	currentVelU = 0;
     currentVelL = 0;
-	var TIME_STEP = 0.1;
-	var LEN_STEP = 0.0000003125 * 2;
+	var TIME_STEP = 0.005;
+	var LEN_STEP = 0.000000000001;
 	var curveLimit = 0;
-	
-	timeToDeccelerate = act_robot_speed / act_robot_acc
-	lenToDeccelerate = (act_robot_speed + 0) / 2 * timeToDeccelerate
-	var limitToStartDeccelerate;
-	var constantsToStartDeccelerate;
-	if (false)//(constants.length > 1)
-	{
-		for (ii = constants.length - 1; ii >= 0 && lenToDeccelerate >= 0; ii--)
-		{
-			constantsToStartDeccelerate = ii;
-			curveLimit = 10;
-			while (curveLimit >= 0 && lenToDeccelerate >= 0)
-			{
-				dyParam = derivative(curveLimit, constants[ii][1]) * LEN_STEP;
-				dxParam = derivative (curveLimit, constants[ii][0]) * LEN_STEP;
-				lenToDeccelerate -=  math.sqrt(dxParam * dxParam + dyParam * dyParam)
-				curveLimit -= LEN_STEP;
-			}
-			limitToStartDeccelerate = curveLimit;
-		}
-	}
-	else
-	{
-		constantsToStartDeccelerate = constants.length;
-	}
-    
-	var maxDistTravelled = 0;
-    for (ii = 0; ii < constantsToStartDeccelerate; ii++)//accelerating
+    maxVelUpper = Math.min(act_robot_speed, currentVelU + act_robot_acc * TIME_STEP);
+    maxDistUpper = (maxVelUpper) * TIME_STEP;
+    maxVelLower = Math.min(act_robot_speed, currentVelL + act_robot_acc * TIME_STEP);
+    maxDistLower = (maxVelLower) * TIME_STEP;
+    curDistUpper = 0;
+    curDistLower = 0;
+		
+	var totalError = 0;
+    for (ii = 0; ii < constants.length; ii++)//accelerating
     {
-        var curveLimit = 0;
-        maxVelUpper = Math.min(act_robot_speed, currentVelU + act_robot_acc * TIME_STEP);
-        maxDistUpper = (currentVelU + maxVelUpper) / 2 * TIME_STEP;
-        maxVelLower = Math.min(act_robot_speed, currentVelL + act_robot_acc * TIME_STEP);
-        maxDistLower = (currentVelL + maxVelLower) / 2 * TIME_STEP;
-        curDistUpper = 0;
-        curDistLower = 0;
+        curveLimit = 0;
 		var derivAngle = Math.atan2(derivative(curveLimit, constants[ii][1]), derivative(curveLimit, constants[ii][0]));
 		var initialPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]), f(curveLimit, constants[ii][1]), derivAngle, 16)
         var xPosUpper2 = initialPts[0][0];
         var yPosUpper2 = initialPts[0][1];
         var xPosLower2 = initialPts[1][0];
         var yPosLower2 = initialPts[1][1];
-		//console.log("MAX DIST: " )
-        while (curveLimit <= 10)
+		curveLimit = 0.00000001;
+		while (curveLimit < 10)
         {
-            curveLimit += LEN_STEP;
             var derivAngle = Math.atan2(derivative(curveLimit, constants[ii][1]), derivative(curveLimit, constants[ii][0]));
             var currentPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]), f(curveLimit, constants[ii][1]), derivAngle, 16);
             var xPosUpper1 = currentPts[0][0];
@@ -677,28 +679,27 @@ function genPts()
             var yPosLower1 = currentPts[1][1];
             var upperDistTraveled = Math.sqrt((xPosUpper1 - xPosUpper2) * (xPosUpper1 - xPosUpper2) + (yPosUpper1 - yPosUpper2) * (yPosUpper1 - yPosUpper2));
             var lowerDistTraveled = Math.sqrt((xPosLower1 - xPosLower2) * (xPosLower1 - xPosLower2) + (yPosLower1 - yPosLower2) * (yPosLower1 - yPosLower2));
-            if (upperDistTraveled > maxDistTravelled)
-				maxDistTravelled = upperDistTraveled;
-			if (lowerDistTraveled > maxDistTravelled)
-				maxDistTravelled = lowerDistTraveled;
+            if (Math.abs(Math.atan2((yPosUpper1 - yPosUpper2), (xPosUpper1 - xPosUpper2)) - derivAngle) >= 3.141592 * 2 / 3)
+			{
+				//console.log("Upper Negative Triggered");
+				upperDistTraveled *= -1;
+			}
+			if (Math.abs(Math.atan2((yPosLower1 - yPosLower2), (xPosLower1 - xPosLower2)) - derivAngle) >= 3.141592 * 2 / 3)
+			{
+				//console.log("Lower Negative Triggered");
+				lowerDistTraveled *= -1;
+			}
+			
 			curDistUpper += upperDistTraveled;
             curDistLower += lowerDistTraveled;
-            xPosUpper2 = xPosUpper1;
+			xPosUpper2 = xPosUpper1;
             yPosUpper2 = yPosUpper1;
             xPosLower2 = xPosLower1;
             yPosLower2 = yPosLower1;
-			console.log(curDistUpper + ", " + curDistLower)
-			if (curDistUpper  - maxDistUpper > 0.2 || curDistLower - maxDistLower > 0.2)
-			{
-				console.log(maxDistUpper + ", " + maxDistLower)
-				alert("failed");
-				console.log("MAX DIST" + maxDistTravelled);
-				return;
-			}
-            if (Math.abs(curDistUpper - maxDistUpper) < 0.00001 || Math.abs(curDistLower - maxDistLower) < 0.00001)
+			if (curDistUpper > maxDistUpper || curDistLower > maxDistLower)
             {
-                var upperDist = Math.min(curDistUpper, maxDistUpper);
-                var lowerDist = math.min(curDistLower, maxDistLower);
+                var upperDist = Math.max(Math.min(curDistUpper, maxDistUpper), 0);
+                var lowerDist = Math.max(Math.min(curDistLower, maxDistLower), 0);
                 var dir = 1;
                 if (constants[ii][2])
                     dir = -1;
@@ -711,29 +712,68 @@ function genPts()
                 
 				drawBlip(xPosLower2, yPosLower2, "#00ff00", ctx2);
 				drawBlip(xPosUpper2, yPosUpper2, "#00ff00", ctx2);
+				if (curDistUpper < 0)
+					totalError += Math.abs(curDistUpper);
+				if (curDistLower < 0)
+					totalError += Math.abs(curDistLower);
 				
-				//console.log("U: " + (maxDistUpper) + " L: " + (maxDistLower));
-                //This will introduce some minor error, but it should be negligible
-                curDistUpper = 0;//Math.max(curDistUpper - maxDistUpper, 0);
-                curDistLower = 0;//Math.max(curDistLower - maxDistLower, 0);
+				//This will introduce some minor error, but it should be negligible
+                curDistUpper = Math.max(curDistUpper - maxDistUpper, 0);
+                curDistLower = Math.max(curDistLower - maxDistLower, 0);
+				totalError += Math.max(curDistUpper, curDistLower);
 				
-				console.log("U: " + curDistUpper + " L: " + curDistLower);
                 if (dir == -1)
-					speedPts.push([lowerSpeedPt, upperSpeedPt, TIME_STEP]);
+					speedPts.push([lowerSpeedPt, upperSpeedPt, derivAngle, lowerDist * -1, upperDist * -1, TIME_STEP]);
 				else
-					speedPts.push([upperSpeedPt, lowerSpeedPt, TIME_STEP]);
+					speedPts.push([upperSpeedPt, lowerSpeedPt, derivAngle, upperDist, lowerDist, TIME_STEP]);
                 maxVelUpper = Math.min(act_robot_speed, currentVelU + act_robot_acc * TIME_STEP);
-                maxDistUpper = (currentVelU + maxVelUpper) / 2 * TIME_STEP;
+                maxDistUpper = (maxVelUpper) * TIME_STEP;
                 maxVelLower = Math.min(act_robot_speed, currentVelL + act_robot_acc * TIME_STEP);
-                maxDistLower = (currentVelL + maxVelLower) / 2 * TIME_STEP;
+                maxDistLower = (maxVelLower) * TIME_STEP;
             }
+            var increment = LEN_STEP / Math.max(upperDistTraveled, lowerDistTraveled);
+			curveLimit += increment;
+			upperDistTraveled = 0;
+			lowerDistTraveled = 0;
         }
-        
+		if (ii == constants.length - 1 || constants[ii][2] != constants[ii + 1][2]){
+			var slowDownTime = Math.floor(act_robot_speed * 0.5 / act_robot_acc / TIME_STEP);
+			for (p = 0; p < slowDownTime; p++){
+				speedPts[speedPts.length - 1 - p][0] = speedPts[speedPts.length - 1 - p][0] * (p * 0.7 + slowDownTime * 0.3) / slowDownTime;
+				speedPts[speedPts.length - 1 - p][1] = speedPts[speedPts.length - 1 - p][1] * (p * 0.7 + slowDownTime * 0.3) / slowDownTime;
+				speedPts[speedPts.length - 1 - p][5] = speedPts[speedPts.length - 1 - p][5] * slowDownTime / (p * 0.7 + slowDownTime * 0.3);
+			}
+		}
     }
-	console.log("MAX DIST" + maxDistTravelled);
-	console.log("TIME " + speedPts.length * speedPts[0][2]);
+	var IN_TO_R = 1 / (3.94 * 3.14159265359)
+	var TO_RPM = 60 * IN_TO_R
+	 
+	var tot_time = 0;
+	for (p = 0; p < speedPts.length; p++){
+		speedPts[p].push(tot_time);
+		tot_time += speedPts[p][5];
+		speedPts[p][0] = speedPts[p][0] * TO_RPM;
+		speedPts[p][1] = speedPts[p][1] * TO_RPM;
+		speedPts[p][3] = speedPts[p][0] * IN_TO_R;
+		speedPts[p][4] = speedPts[p][1] * IN_TO_R;
+	}
+	console.log("TOTAL_ERROR " + totalError);
+	console.log("TIME " + tot_time);
 }
 
+function printConstants(){
+	var str = "{"
+	for (p = 0; p < constants.length; p++)
+	{
+		str = str + "{{" + constants[p][0] + "}, {" + constants[p][1] + "}"
+		if (constants[p][2])
+			str = str + ", {1, 0, 0, 0, 0, 0}},"
+		else
+			str = str + ", {0, 0, 0, 0, 0, 0}},"
+	}
+	str = str + "}"
+	console.log(str)
+}
 
 function convertArrayOfObjectsToCSV(args) {
     var result, ctr, keys, columnDelimiter, lineDelimiter, data;
