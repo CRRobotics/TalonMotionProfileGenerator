@@ -1,3 +1,8 @@
+function angle_diff(a, b)
+{
+	return mod((a-b) + 180, 360) - 180;
+}
+
 function getUpperAndLowerPathPts(xOrig, yOrig, dAngle, spacing)
 {
 	var pts = [];
@@ -108,12 +113,12 @@ function genPts(constants)
             var yPosLower1 = currentPts[1][1];
             var upperDistTraveled = Math.sqrt((xPosUpper1 - xPosUpper2) * (xPosUpper1 - xPosUpper2) + (yPosUpper1 - yPosUpper2) * (yPosUpper1 - yPosUpper2));
             var lowerDistTraveled = Math.sqrt((xPosLower1 - xPosLower2) * (xPosLower1 - xPosLower2) + (yPosLower1 - yPosLower2) * (yPosLower1 - yPosLower2));
-            if (Math.abs(Math.atan2((yPosUpper1 - yPosUpper2), (xPosUpper1 - xPosUpper2)) - derivAngle) >= 3.141592 * 2 / 3)
+            if (Math.abs(angle_diff(Math.atan2((yPosUpper1 - yPosUpper2), (xPosUpper1 - xPosUpper2)), derivAngle)) >= 3.141592 * 2 / 3)
 			{
 				//console.log("Upper Negative Triggered");
 				upperDistTraveled *= -1;
 			}
-			if (Math.abs(Math.atan2((yPosLower1 - yPosLower2), (xPosLower1 - xPosLower2)) - derivAngle) >= 3.141592 * 2 / 3)
+			if (Math.abs(angle_diff(Math.atan2((yPosLower1 - yPosLower2), (xPosLower1 - xPosLower2)), derivAngle)) >= 3.141592 * 2 / 3)
 			{
 				//console.log("Lower Negative Triggered");
 				lowerDistTraveled *= -1;
