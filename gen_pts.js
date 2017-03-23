@@ -1,6 +1,6 @@
 function angle_diff(a, b)
 {
-	return ((a - b + 180) % 360) - 180;
+	return ((a - b + 3.141592653589) % (3.141592653589*2)) - 3.141592653589;
 }
 
 function getUpperAndLowerPathPts(xOrig, yOrig, dAngle, spacing)
@@ -167,7 +167,7 @@ function genPts(constants)
                 maxVelLower = Math.min(act_robot_speed, currentVelL + act_robot_acc * TIME_STEP);
                 maxDistLower = (maxVelLower) * TIME_STEP;
             }
-            var increment = LEN_STEP / Math.max(upperDistTraveled, lowerDistTraveled);
+            var increment = Math.abs(LEN_STEP / Math.max(upperDistTraveled, lowerDistTraveled));
 			curveLimit += increment;
 			upperDistTraveled = 0;
 			lowerDistTraveled = 0;
