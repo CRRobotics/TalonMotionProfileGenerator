@@ -1,6 +1,6 @@
 function angle_diff(a, b)
 {
-	return mod((a-b) + 180, 360) - 180;
+	return ((a - b + 180) % 360) - 180;
 }
 
 function getUpperAndLowerPathPts(xOrig, yOrig, dAngle, spacing)
