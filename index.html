@@ -375,7 +375,7 @@ var constants = [];//xParam at 0, yParam at 1, time part1 at 2, time part2 at 3,
 var currentlyReversed = false;
 function canvasClicked(e)
 {
-	var x = (e.clientX) - 7;
+	var x = (e.clientX) - 9;
 	var y = (e.clientY) - 75;
 	
 	var pt = { x: toInchesX(x), y: toInchesY(y)};
@@ -704,7 +704,7 @@ function promptPt()
 {
     var xCoord = parseFloat(prompt("xCoordinate in inches", "0"))
     var yCoord = parseFloat(prompt("yCoordinate in inches", "0"))
-    canvasClicked({clientX: toScreenX(xCoord), clientY: toScreenY(yCoord)});
+    canvasClicked({clientX: toScreenX(xCoord) + 9, clientY: toScreenY(yCoord) + 75});
     if (pts.length != 1)//not first point
     {
         var velMag = parseFloat(prompt("magnitude of your velocity vector", "0"))
