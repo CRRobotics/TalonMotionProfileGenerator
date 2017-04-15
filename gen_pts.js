@@ -66,8 +66,8 @@ function genPts(constants)
 	var curveLimit = 0;
 	
 	    //First generate our slow down endpts
-	var act_robot_decc = act_robot_acc * 1.0;
-    var DATA_COUNT_NEEDED = Math.ceil(act_robot_speed / act_robot_acc / TIME_STEP)
+	var act_robot_decc = act_robot_decc * 1.5;
+    var DATA_COUNT_NEEDED = Math.ceil(act_robot_speed / act_robot_decc / TIME_STEP)
     var BACK_LEN_STEP = 0.00001;
     var intgrLimits = [];
     for (kk = 0; kk < constants.length; kk++)
@@ -125,8 +125,8 @@ function genPts(constants)
                     bSpeedL = bLSpeed;
                     bDistTravU = 0;
                     bDistTravL = 0;
-                    bDistU = Math.min((bSpeedU + act_robot_acc * TIME_STEP), act_robot_speed) * TIME_STEP;
-                    bDistL = Math.min((bSpeedL + act_robot_acc * TIME_STEP), act_robot_speed) * TIME_STEP;
+                    bDistU = Math.min((bSpeedU + act_robot_decc * TIME_STEP), act_robot_speed) * TIME_STEP;
+                    bDistL = Math.min((bSpeedL + act_robot_decc * TIME_STEP), act_robot_speed) * TIME_STEP;
                 }
                 xU2 = xU1;
                 yU2 = yU1;
@@ -233,58 +233,12 @@ function genPts(constants)
 		if (intgrLimits[ii][0] != 10)
 		{
 			currentVelU = 0;
-			currentVelL = 0
-			curDistUpper -= upperDistTraveled;
-			curDistLower -= lowerDistTraveled;
-			upperDistTraveled = 0;
-			lowerDistTraveled = 0;
+			currentVelL = 0;
+			curDistUpper = 0;
+			curDistLower = 0;
 			speedPts = speedPts.concat(intgrLimits[ii][1]);
 		}
-		// if (ii == constants.length - 1 || constants[ii][2] != constants[ii + 1][2]){
-			// var bSpeedL = 0;
-			// var bSpeedR = 0;
-			// var bIndex = 1;
-			// var lReached = false;
-			// var rReached = false;
-			// var maxAcc = act_robot_acc * TIME_STEP;
-			// while(!lReached || !rReached)
-			// {
-				// var lSpeedTemp = Math.abs(speedPts[speedPts.length - bIndex][0]);
-				// var rSpeedTemp = Math.abs(speedPts[speedPts.length - bIndex][1]);				
-				// var lErrorTemp = lSpeedTemp - bSpeedL;
-				// var rErrorTemp = rSpeedTemp - bSpeedR;
-				// var timeLength = speedPts[speedPts.length - bIndex][5]; 
-				// if (lErrorTemp > rErrorTemp)
-				// {
-					// rSpeedTemp *= Math.min((bSpeedL + maxAcc), lSpeedTemp) / lSpeedTemp;
-					// timeLength *= lSpeedTemp / Math.min((bSpeedL + maxAcc), lSpeedTemp);
-					// lSpeedTemp  = Math.min((bSpeedL + maxAcc), lSpeedTemp);
-				// }
-				// else
-				// {
-					// lSpeedTemp *= Math.min((bSpeedR + maxAcc), rSpeedTemp) / rSpeedTemp;
-					// timeLength *= rSpeedTemp / Math.min((bSpeedR + maxAcc), rSpeedTemp);
-					// rSpeedTemp  = Math.min((bSpeedR + maxAcc), rSpeedTemp);
-				// }
-				// speedPts[speedPts.length - bIndex][0] = Math.sign(speedPts[speedPts.length - bIndex][0]) * lSpeedTemp;
-				// speedPts[speedPts.length - bIndex][1] = Math.sign(speedPts[speedPts.length - bIndex][1]) * rSpeedTemp;
-				// speedPts[speedPts.length - bIndex][5] = timeLength;
-				// bSpeedL = lSpeedTemp;
-				// bSpeedR = rSpeedTemp;
-				// if (Math.abs(Math.abs(speedPts[speedPts.length - bIndex - 1][0]) - lSpeedTemp) <= maxAcc)
-					// lReached = true;
-				// if (Math.abs(Math.abs(speedPts[speedPts.length - bIndex - 1][1]) - rSpeedTemp) <= maxAcc)
-					// rReached = true;
-				// bIndex = bIndex + 1;
-			// }
-			// //var slowDownTime = Math.floor(act_robot_speed * 0.5 / act_robot_acc / TIME_STEP);
-			// //for (p = 0; p < slowDownTime; p++){
-			// //	speedPts[speedPts.length - 1 - p][0] = speedPts[speedPts.length - 1 - p][0] * (p * 0.7 + slowDownTime * 0.3) / slowDownTime;
-			// //	speedPts[speedPts.length - 1 - p][1] = speedPts[speedPts.length - 1 - p][1] * (p * 0.7 + slowDownTime * 0.3) / slowDownTime;
-			// //	speedPts[speedPts.length - 1 - p][5] = speedPts[speedPts.length - 1 - p][5] * slowDownTime / (p * 0.7 + slowDownTime * 0.3);
-			// //}
-			// currentVelU = Math.abs(speedPts[speedPts.length - 1][1])
-			// currentVelL = Math.abs(speedPts[speedPts.length - 1][0])
+		
 			
 	}
 	var IN_TO_R = 1 / (6.00 * 3.14159265359)
