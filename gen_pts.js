@@ -6,28 +6,6 @@ function angle_diff(a, b)
 function getUpperAndLowerPathPts(xOrig, yOrig, dAngle, spacing)
 {
 	var pts = [];
-	/*if (Math.abs(m) < 0.0001)
-	{
-		pts.push([xOrig, yOrig + spacing]);
-		pts.push([xOrig, yOrig - spacing]);
-	}
-	else
-	{
-		var perpendicular = -1 / m;
-		var dx = Math.sqrt((spacing * spacing) / (1 + perpendicular * perpendicular));
-		var dy = dx * perpendicular;
-		if (m > 0)
-		{
-			pts.push([xOrig - dx, yOrig - dy]);
-			pts.push([xOrig + dx, yOrig + dy]);
-		}
-		else
-		{
-			pts.push([xOrig + dx, yOrig + dy]);
-			pts.push([xOrig - dx, yOrig - dy]);
-		}
-	}
-	return pts;*/
     pts.push([xOrig + spacing * Math.cos(dAngle + 1.57079632679), yOrig + spacing * Math.sin(dAngle + 1.57079632679)]);
     pts.push([xOrig + spacing * Math.cos(dAngle - 1.57079632679), yOrig + spacing * Math.sin(dAngle - 1.57079632679)]);
     return pts;
@@ -76,25 +54,105 @@ onmessage = function(msg) {
 
 function genPts(constants)
 {
+	console.log("REACHED_1")
 	var speedPts = []
 
-	act_robot_speed = 100;//Max speed for 1 side
-	act_robot_acc = 180;//Max acc for 1 side
+	act_robot_speed = 30;//150;//100;//Max speed for 1 side
+	act_robot_acc = 60;//90;//Max acc for 1 side
 	currentVelU = 0;
     currentVelL = 0;
 	var TIME_STEP = 0.005;
 	var LEN_STEP = 0.000000000001;
 	var curveLimit = 0;
-    maxVelUpper = Math.min(act_robot_speed, currentVelU + act_robot_acc * TIME_STEP);
-    maxDistUpper = (maxVelUpper) * TIME_STEP;
-    maxVelLower = Math.min(act_robot_speed, currentVelL + act_robot_acc * TIME_STEP);
-    maxDistLower = (maxVelLower) * TIME_STEP;
+	
+	    //First generate our slow down endpts
+	var act_robot_decc = act_robot_acc * 1.0;
+    var DATA_COUNT_NEEDED = Math.ceil(act_robot_speed / act_robot_acc / TIME_STEP)
+    var BACK_LEN_STEP = 0.00001;
+    var intgrLimits = [];
+    for (kk = 0; kk < constants.length; kk++)
+    {
+        if (kk == constants.length - 1 || constants[kk][2] != constants[kk + 1][2])
+        {
+            var bCurveLimit = 10;
+            var bSpeedPts = [];
+            var derivAngle = Math.atan2(derivative(bCurveLimit, constants[kk][1]), derivative(bCurveLimit, constants[kk][0]));
+            var currentPts = getUpperAndLowerPathPts(f(bCurveLimit, constants[kk][0]), f(bCurveLimit, constants[kk][1]), derivAngle, 16);
+            var bSpeedU = 0;
+            var bSpeedL = 0;
+            var bDistU = (bSpeedU + act_robot_decc * TIME_STEP) * TIME_STEP;
+            var bDistL = (bSpeedL + act_robot_decc * TIME_STEP) * TIME_STEP;
+            var bDistTravU = 0;
+            var bDistTravL = 0;
+
+            var xU2 = currentPts[0][0];
+            var yU2 = currentPts[0][1];
+            var xL2 = currentPts[1][0];
+            var yL2 = currentPts[1][1];
+            bCurveLimit -= BACK_LEN_STEP
+            var tUDist = 0;
+            var tLDist = 0;
+            while (bSpeedPts.length < DATA_COUNT_NEEDED)
+            {
+                derivAngle = Math.atan2(derivative(bCurveLimit, constants[kk][1]), derivative(bCurveLimit, constants[kk][0]));
+                currentPts = getUpperAndLowerPathPts(f(bCurveLimit, constants[kk][0]), f(bCurveLimit, constants[kk][1]), derivAngle, 16);
+                var xU1 = currentPts[0][0];
+                var yU1 = currentPts[0][1];
+                var xL1 = currentPts[1][0];
+                var yL1 = currentPts[1][1];
+                //if (Math.abs(angle_diff(Math.atan2((yL2 - yL1), (xL2 - xL1)), derivAngle + 3.141592)) >= 3.141592 * 2 / 3)
+                //    bDistTravU -= Math.sqrt((xU1 - xU2) * (xU1 - xU2) + (yU1 - yU2) * (yU1 - yU2))
+                //else
+                    bDistTravU += Math.sqrt((xU1 - xU2) * (xU1 - xU2) + (yU1 - yU2) * (yU1 - yU2))
+				//console.log(bDistTravU);
+                //if (Math.abs(angle_diff(Math.atan2((yU2 - yU1), (xU2 - xU1)), derivAngle + 3.141592)) >= 3.141592 * 2 / 3)
+                //    bDistTravL -= Math.sqrt((xL1 - xL2) * (xL1 - xL2) + (yL1 - yL2) * (yL1 - yL2))
+                //else
+                    bDistTravL += Math.sqrt((xL1 - xL2) * (xL1 - xL2) + (yL1 - yL2) * (yL1 - yL2))
+                if (bDistTravU > bDistU || bDistTravL > bDistL)
+                {
+                    let bUSpeed = bDistTravU / TIME_STEP;
+                    let bLSpeed = bDistTravL / TIME_STEP;
+                    if (constants[kk][2])
+                    {
+                        bSpeedPts.push([-1 * bUSpeed, bLSpeed, derivAngle * 180 / 3.1415926535 - 180, 0, 0, TIME_STEP]);
+                    }
+                    else
+                    {
+                        bSpeedPts.push([bLSpeed, -1 * bUSpeed, derivAngle * 180 / 3.1415926535, 0, 0, TIME_STEP]);
+                    }
+                    bSpeedU = bUSpeed;
+                    bSpeedL = bLSpeed;
+                    bDistTravU = 0;
+                    bDistTravL = 0;
+                    bDistU = Math.min((bSpeedU + act_robot_acc * TIME_STEP), act_robot_speed) * TIME_STEP;
+                    bDistL = Math.min((bSpeedL + act_robot_acc * TIME_STEP), act_robot_speed) * TIME_STEP;
+                }
+                xU2 = xU1;
+                yU2 = yU1;
+                xL2 = xL1;
+                yL2 = yL1;
+                bCurveLimit -= BACK_LEN_STEP;
+            }
+            bSpeedPts.reverse();
+            intgrLimits.push([bCurveLimit, bSpeedPts]);
+        }
+        else
+            intgrLimits.push([10]);
+    }
+	console.log("REACHED_0");
+	
     curDistUpper = 0;
     curDistLower = 0;
-		
+	
 	var totalError = 0;
     for (ii = 0; ii < constants.length; ii++)//accelerating
     {
+		maxVelUpper = Math.min(act_robot_speed, currentVelU + act_robot_acc * TIME_STEP);
+		maxDistUpper = (maxVelUpper) * TIME_STEP;
+		maxVelLower = Math.min(act_robot_speed, currentVelL + act_robot_acc * TIME_STEP);
+		maxDistLower = (maxVelLower) * TIME_STEP;
+    
         curveLimit = 0;
 		var derivAngle = Math.atan2(derivative(curveLimit, constants[ii][1]), derivative(curveLimit, constants[ii][0]));
 		var initialPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]), f(curveLimit, constants[ii][1]), derivAngle, 16)
@@ -103,7 +161,7 @@ function genPts(constants)
         var xPosLower2 = initialPts[1][0];
         var yPosLower2 = initialPts[1][1];
 		curveLimit = 0.00000001;
-		while (curveLimit < 10/* && curveLimit > -10*/)
+		while(curveLimit < intgrLimits[ii][0])
         {
             var derivAngle = Math.atan2(derivative(curveLimit, constants[ii][1]), derivative(curveLimit, constants[ii][0]));
             var currentPts = getUpperAndLowerPathPts(f(curveLimit, constants[ii][0]), f(curveLimit, constants[ii][1]), derivAngle, 16);
@@ -158,10 +216,10 @@ function genPts(constants)
                 curDistLower = Math.max(curDistLower - maxDistLower, 0);
 				totalError += Math.max(curDistUpper, curDistLower);
 				
-                if (dir == -1)
-					speedPts.push([lowerSpeedPt, upperSpeedPt, derivAngle, lowerDist * -1, upperDist * -1, TIME_STEP]);
+                if (dir != -1)
+					speedPts.push([lowerSpeedPt, -1 * upperSpeedPt, derivAngle * 180 / 3.1415926535, lowerDist * -1, upperDist * -1, TIME_STEP]);
 				else
-					speedPts.push([upperSpeedPt, lowerSpeedPt, derivAngle, upperDist, lowerDist, TIME_STEP]);
+					speedPts.push([upperSpeedPt, -1 * lowerSpeedPt, derivAngle * 180 / 3.1415926535 - 180, upperDist, lowerDist, TIME_STEP]);
                 maxVelUpper = Math.min(act_robot_speed, currentVelU + act_robot_acc * TIME_STEP);
                 maxDistUpper = (maxVelUpper) * TIME_STEP;
                 maxVelLower = Math.min(act_robot_speed, currentVelL + act_robot_acc * TIME_STEP);
@@ -172,20 +230,69 @@ function genPts(constants)
 			upperDistTraveled = 0;
 			lowerDistTraveled = 0;
         }
-		if (ii == constants.length - 1 || constants[ii][2] != constants[ii + 1][2]){
-			var slowDownTime = Math.floor(act_robot_speed * 0.5 / act_robot_acc / TIME_STEP);
-			for (p = 0; p < slowDownTime; p++){
-				speedPts[speedPts.length - 1 - p][0] = speedPts[speedPts.length - 1 - p][0] * (p * 0.7 + slowDownTime * 0.3) / slowDownTime;
-				speedPts[speedPts.length - 1 - p][1] = speedPts[speedPts.length - 1 - p][1] * (p * 0.7 + slowDownTime * 0.3) / slowDownTime;
-				speedPts[speedPts.length - 1 - p][5] = speedPts[speedPts.length - 1 - p][5] * slowDownTime / (p * 0.7 + slowDownTime * 0.3);
-			}
+		if (intgrLimits[ii][0] != 10)
+		{
+			currentVelU = 0;
+			currentVelL = 0
+			curDistUpper -= upperDistTraveled;
+			curDistLower -= lowerDistTraveled;
+			upperDistTraveled = 0;
+			lowerDistTraveled = 0;
+			speedPts = speedPts.concat(intgrLimits[ii][1]);
 		}
-    }
-	var IN_TO_R = 1 / (3.94 * 3.14159265359)
+		// if (ii == constants.length - 1 || constants[ii][2] != constants[ii + 1][2]){
+			// var bSpeedL = 0;
+			// var bSpeedR = 0;
+			// var bIndex = 1;
+			// var lReached = false;
+			// var rReached = false;
+			// var maxAcc = act_robot_acc * TIME_STEP;
+			// while(!lReached || !rReached)
+			// {
+				// var lSpeedTemp = Math.abs(speedPts[speedPts.length - bIndex][0]);
+				// var rSpeedTemp = Math.abs(speedPts[speedPts.length - bIndex][1]);				
+				// var lErrorTemp = lSpeedTemp - bSpeedL;
+				// var rErrorTemp = rSpeedTemp - bSpeedR;
+				// var timeLength = speedPts[speedPts.length - bIndex][5]; 
+				// if (lErrorTemp > rErrorTemp)
+				// {
+					// rSpeedTemp *= Math.min((bSpeedL + maxAcc), lSpeedTemp) / lSpeedTemp;
+					// timeLength *= lSpeedTemp / Math.min((bSpeedL + maxAcc), lSpeedTemp);
+					// lSpeedTemp  = Math.min((bSpeedL + maxAcc), lSpeedTemp);
+				// }
+				// else
+				// {
+					// lSpeedTemp *= Math.min((bSpeedR + maxAcc), rSpeedTemp) / rSpeedTemp;
+					// timeLength *= rSpeedTemp / Math.min((bSpeedR + maxAcc), rSpeedTemp);
+					// rSpeedTemp  = Math.min((bSpeedR + maxAcc), rSpeedTemp);
+				// }
+				// speedPts[speedPts.length - bIndex][0] = Math.sign(speedPts[speedPts.length - bIndex][0]) * lSpeedTemp;
+				// speedPts[speedPts.length - bIndex][1] = Math.sign(speedPts[speedPts.length - bIndex][1]) * rSpeedTemp;
+				// speedPts[speedPts.length - bIndex][5] = timeLength;
+				// bSpeedL = lSpeedTemp;
+				// bSpeedR = rSpeedTemp;
+				// if (Math.abs(Math.abs(speedPts[speedPts.length - bIndex - 1][0]) - lSpeedTemp) <= maxAcc)
+					// lReached = true;
+				// if (Math.abs(Math.abs(speedPts[speedPts.length - bIndex - 1][1]) - rSpeedTemp) <= maxAcc)
+					// rReached = true;
+				// bIndex = bIndex + 1;
+			// }
+			// //var slowDownTime = Math.floor(act_robot_speed * 0.5 / act_robot_acc / TIME_STEP);
+			// //for (p = 0; p < slowDownTime; p++){
+			// //	speedPts[speedPts.length - 1 - p][0] = speedPts[speedPts.length - 1 - p][0] * (p * 0.7 + slowDownTime * 0.3) / slowDownTime;
+			// //	speedPts[speedPts.length - 1 - p][1] = speedPts[speedPts.length - 1 - p][1] * (p * 0.7 + slowDownTime * 0.3) / slowDownTime;
+			// //	speedPts[speedPts.length - 1 - p][5] = speedPts[speedPts.length - 1 - p][5] * slowDownTime / (p * 0.7 + slowDownTime * 0.3);
+			// //}
+			// currentVelU = Math.abs(speedPts[speedPts.length - 1][1])
+			// currentVelL = Math.abs(speedPts[speedPts.length - 1][0])
+			
+	}
+	var IN_TO_R = 1 / (6.00 * 3.14159265359)
 	var TO_RPM = 60 * IN_TO_R
-	 
+
 	var tot_time = 0;
-	for (p = 0; p < speedPts.length; p++){
+	for (p = 0; p < speedPts.length; p++)
+	{
 		speedPts[p].push(tot_time);
 		tot_time += speedPts[p][5];
 		speedPts[p][0] = speedPts[p][0] * TO_RPM;
