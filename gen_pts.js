@@ -57,8 +57,8 @@ function genPts(constants)
 	console.log("REACHED_1")
 	var speedPts = []
 
-	act_robot_speed = 30;//150;//100;//Max speed for 1 side
-	act_robot_acc = 60;//90;//Max acc for 1 side
+	act_robot_speed = 30;//100;//150;//Max speed for 1 side
+	act_robot_acc = 60;//60;//Max acc for 1 side
 	currentVelU = 0;
     currentVelL = 0;
 	var TIME_STEP = 0.005;
@@ -66,7 +66,7 @@ function genPts(constants)
 	var curveLimit = 0;
 	
 	    //First generate our slow down endpts
-	var act_robot_decc = act_robot_decc * 1.5;
+	var act_robot_decc = act_robot_acc * 1.5;
     var DATA_COUNT_NEEDED = Math.ceil(act_robot_speed / act_robot_decc / TIME_STEP)
     var BACK_LEN_STEP = 0.00001;
     var intgrLimits = [];
